@@ -83,11 +83,12 @@ class BigramModel(BaseNgramModel):
         self.vocab_len = len(set(itertools.chain.from_iterable(sentences_tokenized)))
 
         for sentence in sentences_tokenized:
-            formatted_sentence = [START_TOKEN] + sentence + [END_TOKEN]
-            self.unigram_counter.update(_process_ngrams(formatted_sentence, 1))
-            self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
+            self.unigram_counter.update(_process_ngrams(sentence, 1))
+            self.bigram_counter.update(_process_ngrams(sentence, 2))
 
     def predict(self, tokenized_sentence: list[str]) -> str:
+        # since we are only looking for the next word, we need not compute the probabilities of all ngrams,
+        # since only the last one changes
         super().predict(tokenized_sentence)
 
         max_prob = - math.inf
@@ -109,6 +110,7 @@ class BigramModel(BaseNgramModel):
 
         return (math.log2((self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha)) -
                 math.log2(self.unigram_counter[token] + self.alpha * self.vocab_len))
+
 
 
 class TrigramModel(BaseNgramModel):
@@ -133,9 +135,8 @@ class TrigramModel(BaseNgramModel):
         self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
 
         for sentence in sentences_tokenized:
-            formatted_sentence = [START_TOKEN] + [START_TOKEN] + sentence + [END_TOKEN]
-            self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
-            self.trigram_counter.update(_process_ngrams(formatted_sentence, 3))
+            self.bigram_counter.update(_process_ngrams(sentence, 2))
+            self.trigram_counter.update(_process_ngrams(sentence, 3))
 
     def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
         super().predict(tokenized_sentence)
