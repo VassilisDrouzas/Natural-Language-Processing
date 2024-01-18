@@ -10,46 +10,9 @@ START_TOKEN = "<start>"
 END_TOKEN = "<end>"
 
 
-class INgramModel:
+class BaseNgramModel:
     """
-    An interface for all N-gram models.
-    """
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def fit(self, sentences_tokenized: list[list[str]]) -> None:
-        """
-        Train the model on a tokenized selection of sentences.
-        :param sentences_tokenized: a list of all sentences. Each sentence is represented as a list of string tokens.
-        :return: None
-        """
-        pass
-
-    @abstractmethod
-    def predict(self, tokenized_sentence: list[str]) -> str:
-        """
-        Predict the next word in a given sentence. Uses n-gram probability with Laplace Smoothing.
-        :param tokenized_sentence: a list of string tokens
-        :raise Runtime Error: if the model has not been trained
-        :return: the most probable token
-        """
-        return ""
-
-    @abstractmethod
-    def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
-        """
-        Get the model's log-probability for a specific token given a sentence.
-        :param tokenized_sentence: a list of string tokens
-        :param token: the token
-        :raise Runtime Error: if the model has not been trained
-        :return: the log2-probability that the token is next
-        """
-        return 0
-
-
-class BaseNgramModel(INgramModel):
-    """
-    Base class handling input checking.
+    Base class for all n-gram models.
     """
     __metaclass__ = ABCMeta
 
@@ -62,10 +25,21 @@ class BaseNgramModel(INgramModel):
 
     @abstractmethod
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        """
+        Train the model on a tokenized selection of sentences.
+        :param sentences_tokenized: a list of all sentences. Each sentence is represented as a list of string tokens.
+        :return: None
+        """
         self.trained = True
 
     @abstractmethod
     def predict(self, tokenized_sentence: list[str]) -> str:
+        """
+        Predict the next word in a given sentence. Uses n-gram probability with Laplace Smoothing.
+        :param tokenized_sentence: a list of string tokens
+        :raise Runtime Error: if the model has not been trained
+        :return: the most probable token
+        """
         assert tokenized_sentence is not None
 
         if not self.trained:
@@ -74,6 +48,13 @@ class BaseNgramModel(INgramModel):
 
     @abstractmethod
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
+        """
+        Get the model's log-probability for a specific token given a sentence.
+        :param tokenized_sentence: a list of string tokens
+        :param token: the token
+        :raise Runtime Error: if the model has not been trained
+        :return: the log2-probability that the token is next
+        """
         assert tokenized_sentence is not None
 
         if not self.trained:
@@ -200,8 +181,6 @@ class LinearInterpolationModel(BaseNgramModel):
 
         self.bigram_model = BigramModel(alpha)
         self.trigram_model = TrigramModel(alpha)
-
-
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
         super().fit(sentences_tokenized)
