@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.models import BigramModel, TrigramModel, LinearInterpolationModel
+from src.autocomplete import BigramModel, TrigramModel, LinearInterpolationModel
 from nltk.tokenize import TweetTokenizer
 
 test_corpus = ["he plays football",
