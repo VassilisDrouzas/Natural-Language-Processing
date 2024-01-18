@@ -41,19 +41,20 @@ class BigramModel(INgramModel):
         if alpha > 1.0 or alpha <= 0:
             raise ValueError(f"Alpha value must be between 0 and 1 exclusive (value given alpha={alpha})")
 
-        self.vocab = {}
+        self.vocab_len = 0
         self.alpha = alpha
         self.bigram_counter = Counter()
         self.unigram_counter = Counter()
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
-        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
+        self.vocab_len = len(set(itertools.chain.from_iterable(sentences_tokenized)))
 
         for sentence in sentences_tokenized:
             self.unigram_counter.update(_process_ngrams(sentence, 1))
             self.bigram_counter.update(_process_ngrams(sentence, 2))
 
     def predict(self, tokenized_sentence: list[str]) -> str:
+        assert tokenized_sentence is not None
 
         if len(tokenized_sentence) == 0:
             raise ValueError("Cannot predict in empty sentence.")
@@ -61,9 +62,51 @@ class BigramModel(INgramModel):
         max_prob = -1
         max_token = None
 
+        for token in self.unigram_counter.keys():
+            prob = ((self.bigram_counter[(tokenized_sentence[-1], token)] + self.alpha) /
+                    (self.unigram_counter[token] + self.alpha * self.vocab_len))
+
+            if prob > max_prob:
+                max_prob = prob
+                max_token = token
+
+        # we could also return the probability here?
+        return max_token
+
+
+class TrigramModel(INgramModel):
+    """
+        A basic trigram model using Laplace Smoothing.
+        """
+
+    def __init__(self, alpha: float):
+        if alpha > 1.0 or alpha <= 0:
+            raise ValueError(f"Alpha value must be between 0 and 1 exclusive (value given alpha={alpha})")
+
+        self.vocab = {}
+        self.alpha = alpha
+        self.bigram_counter = Counter()
+        self.trigram_counter = Counter()
+
+    def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
+
+        for sentence in sentences_tokenized:
+            self.bigram_counter.update(_process_ngrams(sentence, 2))
+            self.trigram_counter.update(_process_ngrams(sentence, 3))
+
+    def predict(self, tokenized_sentence: list[str]) -> str:
+        assert tokenized_sentence is not None
+
+        if len(tokenized_sentence) < 2:
+            raise ValueError("Cannot predict in empty sentence.")
+
+        max_prob = -1
+        max_token = None
+
         for token in self.vocab:
-            prob = ((self.bigram_counter[(tokenized_sentence[-2], tokenized_sentence[-1])] + self.alpha) /
-                    (self.unigram_counter[(token,)] + self.alpha * len(self.vocab)))
+            prob = ((self.trigram_counter[(tokenized_sentence[-2], tokenized_sentence[-1], token)] + self.alpha) /
+                    (self.bigram_counter[(tokenized_sentence[-1], token)] + self.alpha * len(self.vocab)))
 
             if prob > max_prob:
                 max_prob = prob
