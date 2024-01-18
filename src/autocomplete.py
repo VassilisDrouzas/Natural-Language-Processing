@@ -1,4 +1,5 @@
 import itertools
+import math
 from abc import ABCMeta, abstractmethod
 from collections import Counter
 
@@ -36,11 +37,11 @@ class INgramModel:
     @abstractmethod
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
         """
-        Get the model's probability for a specific token given a sentence.
+        Get the model's log-probability for a specific token given a sentence.
         :param tokenized_sentence: a list of string tokens
         :param token: the token
         :raise Runtime Error: if the model has not been trained
-        :return: the probability that the token is next
+        :return: the log2-probability that the token is next
         """
         return 0
 
@@ -77,7 +78,7 @@ class BigramModel(INgramModel):
         if self.vocab_len == 0:
             raise RuntimeError("Model has not been trained.")
 
-        max_prob = -1
+        max_prob = - math.inf
         max_token = None
 
         for token in self.unigram_counter.keys():
@@ -97,8 +98,8 @@ class BigramModel(INgramModel):
 
         formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence
 
-        return ((self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha) /
-                (self.unigram_counter[token] + self.alpha * self.vocab_len))
+        return (math.log2((self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha)) -
+                math.log2(self.unigram_counter[token] + self.alpha * self.vocab_len))
 
 
 class TrigramModel(INgramModel):
@@ -133,7 +134,7 @@ class TrigramModel(INgramModel):
         if self.vocab == {}:
             raise RuntimeError("Model has not been trained.")
 
-        max_prob = -1
+        max_prob = - math.inf
         max_token = None
 
         for token in self.vocab:
@@ -152,8 +153,8 @@ class TrigramModel(INgramModel):
             raise RuntimeError("Model has not been trained.")
 
         formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence
-        return ((self.trigram_counter[(formatted_sentence[-2], formatted_sentence[-1], token)] + self.alpha) /
-                (self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha * len(self.vocab)))
+        return (math.log2(self.trigram_counter[(formatted_sentence[-2], formatted_sentence[-1], token)] + self.alpha) -
+                math.log2(self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha * len(self.vocab)))
 
 
 # I could generalize this to support combinations of unigrams, bigrams and trigrams, but we'll see
@@ -185,7 +186,7 @@ class LinearInterpolationModel(INgramModel):
             raise RuntimeError("Model has not been trained.")
 
         # no need for sentence checking here, the underlying classes will take care of it
-        max_prob = -1
+        max_prob = - math.inf
         max_token = None
 
         for token in self.trigram_model.vocab:
@@ -197,6 +198,13 @@ class LinearInterpolationModel(INgramModel):
         return max_token
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
+        """
+        Get the interpolation's weighted probability sum for a specific token given a sentence.
+        :param tokenized_sentence: a list of string tokens
+        :param token: the token
+        :raise Runtime Error: if the model has not been trained
+        :return: the weighted probability that the token is next
+        """
         bigram_prob = self.bigram_model.prediction_proba(tokenized_sentence, token)
         trigram_prob = self.trigram_model.prediction_proba(tokenized_sentence, token)
         return self.lamda * bigram_prob + (1 - self.lamda) * trigram_prob

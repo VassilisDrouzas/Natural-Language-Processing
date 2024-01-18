@@ -55,7 +55,7 @@ class TestBigramModel(TestCase):
 
         model.fit(tokenized)
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
-        assert 0 <= probs <= 1
+        assert probs <= 0
 
 
 class TestTrigramModel(TestCase):
@@ -99,7 +99,7 @@ class TestTrigramModel(TestCase):
 
         model.fit(tokenized)
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
-        assert 0 <= probs <= 1
+        assert probs <= 0
 
 
 class TestLinearInterpolationModel(TestCase):
@@ -140,4 +140,4 @@ class TestLinearInterpolationModel(TestCase):
 
         model.fit(tokenized)
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
-        assert 0 <= probs <= 1
+        assert probs <= 0
