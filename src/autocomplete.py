@@ -67,8 +67,9 @@ class BigramModel(INgramModel):
         self.vocab_len = len(set(itertools.chain.from_iterable(sentences_tokenized)))
 
         for sentence in sentences_tokenized:
-            self.unigram_counter.update(_process_ngrams(sentence, 1))
-            self.bigram_counter.update(_process_ngrams(sentence, 2))
+            formatted_sentence = [START_TOKEN] + sentence + [END_TOKEN]
+            self.unigram_counter.update(_process_ngrams(formatted_sentence, 1))
+            self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
 
     def predict(self, tokenized_sentence: list[str]) -> str:
         assert tokenized_sentence is not None
@@ -122,8 +123,9 @@ class TrigramModel(INgramModel):
         self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
 
         for sentence in sentences_tokenized:
-            self.bigram_counter.update(_process_ngrams(sentence, 2))
-            self.trigram_counter.update(_process_ngrams(sentence, 3))
+            formatted_sentence = [START_TOKEN] + [START_TOKEN] + sentence + [END_TOKEN]
+            self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
+            self.trigram_counter.update(_process_ngrams(formatted_sentence, 3))
 
     def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
         assert tokenized_sentence is not None
