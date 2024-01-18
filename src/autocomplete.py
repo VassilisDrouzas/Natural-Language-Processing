@@ -5,6 +5,7 @@ from collections import Counter
 
 from nltk.util import ngrams
 
+# different start symbols aren't supported in nltk's ngrams method
 START_TOKEN = "<start>"
 END_TOKEN = "<end>"
 
@@ -46,7 +47,41 @@ class INgramModel:
         return 0
 
 
-class BigramModel(INgramModel):
+class BaseNgramModel(INgramModel):
+    """
+    Base class handling input checking.
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self, alpha: float):
+        if alpha > 1.0 or alpha <= 0:
+            raise ValueError(f"Alpha value must be between 0 (exclusive) and 1 (value given alpha={alpha})")
+        self.alpha = alpha
+
+        self.trained = False
+
+    @abstractmethod
+    def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        self.trained = True
+
+    @abstractmethod
+    def predict(self, tokenized_sentence: list[str]) -> str:
+        assert tokenized_sentence is not None
+
+        if not self.trained:
+            raise RuntimeError("Model has not been trained.")
+        return ""
+
+    @abstractmethod
+    def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
+        assert tokenized_sentence is not None
+
+        if not self.trained:
+            raise RuntimeError("Model has not been trained.")
+        return 0
+
+
+class BigramModel(BaseNgramModel):
     """
     A basic bigram model using Laplace Smoothing.
     """
@@ -56,15 +91,14 @@ class BigramModel(INgramModel):
         Create a bigram model.
         :param alpha: the Laplace smoothing parameter. Must be between 0 and 1 (excluding 0)
         """
-        if alpha > 1.0 or alpha <= 0:
-            raise ValueError(f"Alpha value must be between 0 (exclusive) and 1 (value given alpha={alpha})")
+        super().__init__(alpha)
 
         self.vocab_len = 0
-        self.alpha = alpha
         self.bigram_counter = Counter()
         self.unigram_counter = Counter()
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        super().fit(sentences_tokenized)
         self.vocab_len = len(set(itertools.chain.from_iterable(sentences_tokenized)))
 
         for sentence in sentences_tokenized:
@@ -73,10 +107,7 @@ class BigramModel(INgramModel):
             self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
 
     def predict(self, tokenized_sentence: list[str]) -> str:
-        assert tokenized_sentence is not None
-
-        if self.vocab_len == 0:
-            raise RuntimeError("Model has not been trained.")
+        super().predict(tokenized_sentence)
 
         max_prob = - math.inf
         max_token = None
@@ -91,10 +122,7 @@ class BigramModel(INgramModel):
         return max_token
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
-        assert tokenized_sentence is not None
-
-        if self.vocab_len == 0:
-            raise RuntimeError("Model has not been trained.")
+        super().prediction_proba(tokenized_sentence, token)
 
         formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence
 
@@ -102,7 +130,7 @@ class BigramModel(INgramModel):
                 math.log2(self.unigram_counter[token] + self.alpha * self.vocab_len))
 
 
-class TrigramModel(INgramModel):
+class TrigramModel(BaseNgramModel):
     """
     A basic trigram model using Laplace Smoothing.
     """
@@ -112,15 +140,15 @@ class TrigramModel(INgramModel):
         Create a trigram model.
         :param alpha: the Laplace smoothing parameter. Must be between 0 and 1 (excluding 0)
         """
-        if alpha > 1.0 or alpha <= 0:
-            raise ValueError(f"Alpha value must be between 0 (exclusive) and 1 (value given alpha={alpha})")
+        super().__init__(alpha)
 
         self.vocab = {}
-        self.alpha = alpha
         self.bigram_counter = Counter()
         self.trigram_counter = Counter()
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        super().fit(sentences_tokenized)
+
         self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
 
         for sentence in sentences_tokenized:
@@ -129,10 +157,7 @@ class TrigramModel(INgramModel):
             self.trigram_counter.update(_process_ngrams(formatted_sentence, 3))
 
     def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
-        assert tokenized_sentence is not None
-
-        if self.vocab == {}:
-            raise RuntimeError("Model has not been trained.")
+        super().predict(tokenized_sentence)
 
         max_prob = - math.inf
         max_token = None
@@ -147,10 +172,7 @@ class TrigramModel(INgramModel):
         return max_token
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
-        assert tokenized_sentence is not None
-
-        if self.vocab == {}:
-            raise RuntimeError("Model has not been trained.")
+        super().prediction_proba(tokenized_sentence, token)
 
         formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence
         return (math.log2(self.trigram_counter[(formatted_sentence[-2], formatted_sentence[-1], token)] + self.alpha) -
@@ -158,7 +180,7 @@ class TrigramModel(INgramModel):
 
 
 # I could generalize this to support combinations of unigrams, bigrams and trigrams, but we'll see
-class LinearInterpolationModel(INgramModel):
+class LinearInterpolationModel(BaseNgramModel):
     """
     A model using linear interpolation between a bigram and trigram model.
     """
@@ -166,24 +188,28 @@ class LinearInterpolationModel(INgramModel):
     def __init__(self, alpha: float, lamda: float):
         """
         Create a linear interpolation model between a bigram and trigram model.
-        :param alpha: the Laplace smoothing parameter. Must be between 0 and 1 (excluding 0)
+        :param alpha: the Laplace smoothing parameter for the internal models. Must be between 0 and 1 (excluding 0)
         :param lamda: the interpolation parameter, where probability = lambda * (bigram probability)
         + (1-lamda) * (trigram probability)
         """
+        super().__init__(alpha)
+
         if lamda > 1.0 or lamda <= 0:
-            raise ValueError(f"Lamda value must be between 0 (exclusive) and 1 (value given alpha={lamda})")
+            raise ValueError(f"Lamda value must be between 0 (exclusive) and 1 (value given lamda={lamda})")
+        self.lamda = lamda
 
         self.bigram_model = BigramModel(alpha)
         self.trigram_model = TrigramModel(alpha)
-        self.lamda = lamda
+
+
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        super().fit(sentences_tokenized)
         self.bigram_model.fit(sentences_tokenized)
         self.trigram_model.fit(sentences_tokenized)
 
     def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
-        if self.bigram_model.vocab_len == 0:
-            raise RuntimeError("Model has not been trained.")
+        super().predict(tokenized_sentence)
 
         # no need for sentence checking here, the underlying classes will take care of it
         max_prob = - math.inf
@@ -205,6 +231,8 @@ class LinearInterpolationModel(INgramModel):
         :raise Runtime Error: if the model has not been trained
         :return: the weighted probability that the token is next
         """
+        super().prediction_proba(tokenized_sentence, token)
+
         bigram_prob = self.bigram_model.prediction_proba(tokenized_sentence, token)
         trigram_prob = self.trigram_model.prediction_proba(tokenized_sentence, token)
         return self.lamda * bigram_prob + (1 - self.lamda) * trigram_prob
