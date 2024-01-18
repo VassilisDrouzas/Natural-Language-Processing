@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.models import BigramModel, TrigramModel
+from src.models import BigramModel, TrigramModel, LinearInterpolationModel
 from nltk.tokenize import TweetTokenizer
 
 test_corpus = ["he plays football",
@@ -35,16 +35,27 @@ class TestBigramModel(TestCase):
 
     def test_predict(self):
         model = BigramModel(alpha=0.01)
+
+        self.assertRaises(RuntimeError, model.predict, ["he plays"])
+
         model.fit(tokenized)
 
-        self.assertRaises(ValueError, model.predict, [])
         self.assertRaises(AssertionError, model.predict, None)
 
         # for now just make sure it produces something
+        model.predict([])
         self.assertIsNotNone(model.predict(tweet_wt.tokenize("he plays")))
 
         # prediction = model.predict(tweet_wt.tokenize("he plays"))
         # self.assertEqual("football", prediction)
+
+    def test_prediction_proba(self):
+        model = BigramModel(alpha=0.01)
+        self.assertRaises(RuntimeError, model.prediction_proba, tweet_wt.tokenize(test_corpus[0][:-3]), "football")
+
+        model.fit(tokenized)
+        probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
+        assert 0 <= probs <= 1
 
 
 class TestTrigramModel(TestCase):
@@ -68,14 +79,65 @@ class TestTrigramModel(TestCase):
 
     def test_predict(self):
         model = TrigramModel(alpha=0.01)
-        model.fit(tokenized)
 
-        self.assertRaises(ValueError, model.predict, [])
-        self.assertRaises(ValueError, model.predict, ["he"])
+        self.assertRaises(RuntimeError, model.predict, tweet_wt.tokenize("he plays"))
+
+        model.fit(tokenized)
         self.assertRaises(AssertionError, model.predict, None)
 
         # for now just make sure it produces something
+        model.predict([])
+        model.predict(["he"])
         self.assertIsNotNone(model.predict(tweet_wt.tokenize("he plays")))
 
         # prediction = model.predict(tweet_wt.tokenize("he plays"))
         # self.assertEqual("football", prediction)
+
+    def test_prediction_proba(self):
+        model = TrigramModel(alpha=0.01)
+        self.assertRaises(RuntimeError, model.prediction_proba, tweet_wt.tokenize(test_corpus[0][:-3]), "football")
+
+        model.fit(tokenized)
+        probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
+        assert 0 <= probs <= 1
+
+
+class TestLinearInterpolationModel(TestCase):
+
+    def test_init(self):
+        self.assertRaises(ValueError, LinearInterpolationModel, 34, 0.5)
+        self.assertRaises(ValueError, LinearInterpolationModel, 0, 0.5)
+        self.assertRaises(ValueError, LinearInterpolationModel, -2, 0.5)
+
+        self.assertRaises(ValueError, LinearInterpolationModel, 0.1, 2)
+        self.assertRaises(ValueError, LinearInterpolationModel, 0.1, -1)
+        self.assertRaises(ValueError, LinearInterpolationModel, 0.1, 345)
+
+        LinearInterpolationModel(alpha=1, lamda=1)
+        LinearInterpolationModel(alpha=0.01, lamda=0.5)
+
+    def test_fit(self):
+        model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
+        model.fit([])
+        model.fit(tokenized)
+
+    def test_predict(self):
+        model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
+
+        self.assertRaises(RuntimeError, model.predict, ["he plays"])
+
+        model.fit(tokenized)
+        self.assertRaises(AssertionError, model.predict, None)
+
+        # for now just make sure it produces something
+        model.predict([])
+        model.predict(["he"])
+        self.assertIsNotNone(model.predict(tweet_wt.tokenize("he plays")))
+
+    def test_prediction_proba(self):
+        model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
+        self.assertRaises(RuntimeError, model.prediction_proba, tweet_wt.tokenize(test_corpus[0][:-3]), "football")
+
+        model.fit(tokenized)
+        probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
+        assert 0 <= probs <= 1
