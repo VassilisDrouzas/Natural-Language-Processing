@@ -57,6 +57,18 @@ class TestBigramModel(TestCase):
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
         assert probs <= 0
 
+    def test_sentence_proba(self):
+        model = BigramModel(alpha=0.01)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        correct_sentence_probs = model.sentence_proba(tweet_wt.tokenize(test_corpus[0]))
+
+        false_sentence_probs = model.sentence_proba(tweet_wt.tokenize("she pleases te ball"))
+
+        assert correct_sentence_probs > false_sentence_probs
+
 
 class TestTrigramModel(TestCase):
 
@@ -101,6 +113,18 @@ class TestTrigramModel(TestCase):
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
         assert probs <= 0
 
+    def test_sentence_proba(self):
+        model = TrigramModel(alpha=0.01)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        correct_sentence_probs = model.sentence_proba(tweet_wt.tokenize(test_corpus[0]))
+
+        false_sentence_probs = model.sentence_proba(tweet_wt.tokenize("she pleases te ball"))
+
+        assert correct_sentence_probs > false_sentence_probs
+
 
 class TestLinearInterpolationModel(TestCase):
 
@@ -141,3 +165,15 @@ class TestLinearInterpolationModel(TestCase):
         model.fit(tokenized)
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
         assert probs <= 0
+
+    def test_sentence_proba(self):
+        model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        correct_sentence_probs = model.sentence_proba(tweet_wt.tokenize(test_corpus[0]))
+
+        false_sentence_probs = model.sentence_proba(tweet_wt.tokenize("she pleases te ball"))
+
+        assert correct_sentence_probs > false_sentence_probs
