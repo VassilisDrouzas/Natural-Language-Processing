@@ -91,7 +91,7 @@ class TestTrigramModel(TestCase):
         model.fit([])
 
         model.fit(tokenized)
-        assert len(model.vocabulary()) == 21 + 2
+        self.assertEqual(21 + 2, len(model.vocabulary()))
 
     def test_predict(self):
         model = TrigramModel(alpha=0.01)

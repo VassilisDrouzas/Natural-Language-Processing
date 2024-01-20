@@ -127,6 +127,7 @@ class BigramModel(BaseNgramModel):
         super().fit(sentences_tokenized)
 
         for sentence in sentences_tokenized:
+            # get the strings inside the tuples
             self.unigram_counter.update([tuple_[0] for tuple_ in _process_ngrams(sentence, 1)])
             self.bigram_counter.update(_process_ngrams(sentence, 2))
 
@@ -151,6 +152,7 @@ class BigramModel(BaseNgramModel):
     def vocabulary(self) -> Collection[str]:
         return self.unigram_counter.keys()
 
+
 class TrigramModel(BaseNgramModel):
     """
     A basic trigram model using Laplace Smoothing.
@@ -170,7 +172,7 @@ class TrigramModel(BaseNgramModel):
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
         super().fit(sentences_tokenized)
 
-        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
+        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized)).union({START_TOKEN, END_TOKEN})
 
         for sentence in sentences_tokenized:
             self.bigram_counter.update(_process_ngrams(sentence, 2))
@@ -264,8 +266,8 @@ def _process_ngrams(tokenized_sentence: list[str], ngram: int) -> list[tuple]:
     """
 
     ngram_sent = [gram for gram in ngrams(tokenized_sentence, ngram, pad_left=True, pad_right=True,
-                                    left_pad_symbol=START_TOKEN, right_pad_symbol=END_TOKEN)]
+                                          left_pad_symbol=START_TOKEN, right_pad_symbol=END_TOKEN)]
     if ngram == 1:
-        return [tuple([START_TOKEN],)] + ngram_sent + [tuple([END_TOKEN],)]
+        return [tuple([START_TOKEN], )] + ngram_sent + [tuple([END_TOKEN], )]
     else:
         return ngram_sent
