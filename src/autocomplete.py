@@ -127,7 +127,7 @@ class BigramModel(BaseNgramModel):
         super().fit(sentences_tokenized)
 
         for sentence in sentences_tokenized:
-            self.unigram_counter.update(_process_ngrams(sentence, 1))
+            self.unigram_counter.update([tuple_[0] for tuple_ in _process_ngrams(sentence, 1)])
             self.bigram_counter.update(_process_ngrams(sentence, 2))
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
@@ -149,8 +149,7 @@ class BigramModel(BaseNgramModel):
         return [START_TOKEN] + tokenized_sentence + [END_TOKEN]
 
     def vocabulary(self) -> Collection[str]:
-        return {tuple_[0] for tuple_ in self.unigram_counter.keys()}
-
+        return self.unigram_counter.keys()
 
 class TrigramModel(BaseNgramModel):
     """
@@ -263,5 +262,10 @@ def _process_ngrams(tokenized_sentence: list[str], ngram: int) -> list[tuple]:
     :param ngram: whether the ngrams will be unigrams, bigrams etc
     :return: a list of ngrams representing the original sentence
     """
-    return [gram for gram in ngrams(tokenized_sentence, ngram, pad_left=True, pad_right=True,
+
+    ngram_sent = [gram for gram in ngrams(tokenized_sentence, ngram, pad_left=True, pad_right=True,
                                     left_pad_symbol=START_TOKEN, right_pad_symbol=END_TOKEN)]
+    if ngram == 1:
+        return [tuple([START_TOKEN],)] + ngram_sent + [tuple([END_TOKEN],)]
+    else:
+        return ngram_sent
