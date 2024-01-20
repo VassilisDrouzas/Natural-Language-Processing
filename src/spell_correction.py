@@ -22,10 +22,10 @@ class BigramSpellCorrector:
         assert len(original_tokenized_sentence) == len(target_tokenized_sentence), "Sentences must be of same length."
 
         lm_score = self.language_model.sentence_proba(target_tokenized_sentence)
-        edit_score = sum([1 / (self.conditional_model(original_word, other_word) + 1)
+        edit_score = sum([-math.log2(self.conditional_model(original_word, other_word) + 1)
                           for original_word, other_word in zip(original_tokenized_sentence, target_tokenized_sentence)])
 
-        return self.lamda1 * math.log2(lm_score) + self.lamda2 * math.log2(edit_score)
+        return self.lamda1 * lm_score + self.lamda2 * edit_score
 
     def generate_candidates(self, temp_sentence: list[str]) -> list[list[str]]:
         last_word = temp_sentence[-1]

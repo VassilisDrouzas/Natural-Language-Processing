@@ -1,6 +1,9 @@
 from unittest import TestCase
-from src.spell_correction import _SentenceBeamSearchDecoder
-from src.autocomplete import START_TOKEN, END_TOKEN
+
+from nltk import TweetTokenizer
+
+from src.spell_correction import _SentenceBeamSearchDecoder, BigramSpellCorrector
+from src.autocomplete import BigramModel, START_TOKEN, END_TOKEN
 
 
 class TestSentenceBeamSearchDecoder(TestCase):
@@ -11,6 +14,29 @@ class TestSentenceBeamSearchDecoder(TestCase):
         print(result)
         self.assertIsNotNone(result)
         self.assertNotEqual([START_TOKEN], result)
+
+
+class TestBigramSpellCorrector(TestCase):
+
+    def setUp(self):
+        lang_model = BigramModel(alpha=0.01)
+        lang_model.fit(tokenized)
+        self.model = BigramSpellCorrector(lang_model, 0.5, 0.5)
+
+    def test_evaluate(self):
+        text1 = tweet_wt.tokenize(test_corpus[3])
+        text2 = tweet_wt.tokenize(test_corpus[4])
+
+        eval1 = self.model.evaluate(text1, text1)
+        eval2 = self.model.evaluate(text1, text2)
+
+        self.assertLess(eval2, eval1)
+
+    #def test_generate_candidates(self):
+        #self.fail()
+
+    def test_spell_correct(self):
+        self.fail()
 
 
 # test example by Foivos Anagnostou
@@ -69,3 +95,16 @@ def score(state):
         prev_word, word = state[i - 1], state[i]
         probability *= bigram_model.get((prev_word, word), 0.0)
     return probability
+
+
+# test bigram spell corrector
+test_corpus = ["he plays football",
+               "he plays football",
+               "she enjoys good football",
+               "she plays good music",
+               "he prays to god",
+               "please buy me the other ball,"
+               "he pleases the other players by playing good football"]
+
+tweet_wt = TweetTokenizer()
+tokenized = [tweet_wt.tokenize(sentence) for sentence in test_corpus]
