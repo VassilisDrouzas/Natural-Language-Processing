@@ -3,6 +3,7 @@ import more_itertools
 import math
 from abc import ABCMeta, abstractmethod
 from collections import Counter
+from collections.abc import Collection
 
 from nltk.util import ngrams
 
@@ -32,6 +33,14 @@ class BaseNgramModel:
         :return: None
         """
         self.trained = True
+
+    @abstractmethod
+    def vocabulary(self) -> Collection[str]:
+        """
+        Get all tokens from the model's vocabulary.
+        :return: a list of all tokens in the model
+        """
+        pass
 
     @abstractmethod
     def predict(self, tokenized_sentence: list[str]) -> str:
@@ -98,13 +107,11 @@ class BigramModel(BaseNgramModel):
         """
         super().__init__(alpha)
 
-        self.vocab_len = 0
         self.bigram_counter = Counter()
         self.unigram_counter = Counter()
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
         super().fit(sentences_tokenized)
-        self.vocab_len = len(set(itertools.chain.from_iterable(sentences_tokenized)))
 
         for sentence in sentences_tokenized:
             self.unigram_counter.update(_process_ngrams(sentence, 1))
@@ -119,7 +126,7 @@ class BigramModel(BaseNgramModel):
         max_prob = - math.inf
         max_token = None
 
-        for token in self.unigram_counter.keys():
+        for token in self.vocabulary():
             prob = self.prediction_proba(formatted_sentence, token)
 
             if prob > max_prob:
@@ -132,7 +139,7 @@ class BigramModel(BaseNgramModel):
         super().prediction_proba(tokenized_sentence, token)
 
         return (math.log2((self.bigram_counter[(tokenized_sentence[-1], token)] + self.alpha)) -
-                math.log2(self.unigram_counter[token] + self.alpha * self.vocab_len))
+                math.log2(self.unigram_counter[token] + self.alpha * len(self.vocabulary())))
 
     def sentence_proba(self, tokenized_sentence: list[str]) -> float:
         super().sentence_proba(tokenized_sentence)
@@ -145,6 +152,9 @@ class BigramModel(BaseNgramModel):
 
     def format_input(self, tokenized_sentence: list[str]) -> list[str]:
         return [START_TOKEN] + tokenized_sentence + [END_TOKEN]
+
+    def vocabulary(self) -> Collection[str]:
+        return {tuple_[0] for tuple_ in self.unigram_counter.keys()}
 
 
 class TrigramModel(BaseNgramModel):
@@ -172,14 +182,14 @@ class TrigramModel(BaseNgramModel):
             self.bigram_counter.update(_process_ngrams(sentence, 2))
             self.trigram_counter.update(_process_ngrams(sentence, 3))
 
-    def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
+    def predict(self, tokenized_sentence: list[str]) -> str:
         super().predict(tokenized_sentence)
 
         max_prob = - math.inf
         max_token = None
         formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence + [END_TOKEN]
 
-        for token in self.vocab:
+        for token in self.vocabulary():
             prob = self.prediction_proba(formatted_sentence, token)
 
             if prob > max_prob:
@@ -205,6 +215,9 @@ class TrigramModel(BaseNgramModel):
 
     def format_input(self, tokenized_sentence: list[str]) -> list[str]:
         return [START_TOKEN] + [START_TOKEN] + tokenized_sentence + [END_TOKEN]
+
+    def vocabulary(self) -> Collection[str]:
+        return self.vocab
 
 
 # I could generalize this to support combinations of unigrams, bigrams and trigrams, but we'll see
@@ -271,6 +284,12 @@ class LinearInterpolationModel(BaseNgramModel):
 
         return (self.lamda * self.bigram_model.sentence_proba(tokenized_sentence)
                 + (1 - self.lamda) * self.trigram_model.sentence_proba(tokenized_sentence))
+
+    def vocabulary(self) -> Collection[str]:
+        return set(self.bigram_model.vocabulary()).union(set(self.trigram_model.vocabulary()))
+
+    def format_input(self, tokenized_sentence: list[str]) -> list[str]:
+        return tokenized_sentence
 
 
 def _process_ngrams(tokenized_sentence: list[str], ngram: int) -> list[tuple]:
