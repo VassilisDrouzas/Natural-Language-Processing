@@ -1,5 +1,6 @@
 from unittest import TestCase
-from src.autocomplete import BigramModel, TrigramModel, LinearInterpolationModel
+from src.autocomplete import (BigramModel, TrigramModel, LinearInterpolationModel, _process_ngrams, START_TOKEN,
+                              END_TOKEN)
 from nltk.tokenize import TweetTokenizer
 
 test_corpus = ["he plays football",
@@ -31,7 +32,8 @@ class TestBigramModel(TestCase):
         model.fit([])
 
         model.fit(tokenized)
-        assert model.vocab_len == 21
+        # vocab + meta-tokens
+        assert len(model.vocabulary()) == 21 + 2
 
     def test_predict(self):
         model = BigramModel(alpha=0.01)
@@ -57,6 +59,20 @@ class TestBigramModel(TestCase):
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
         assert probs <= 0
 
+    def test_sentence_proba(self):
+        model = BigramModel(alpha=0.01)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        correct_sentence_probs = model.sentence_proba(tweet_wt.tokenize(test_corpus[0]))
+        self.assertLess(correct_sentence_probs, 0)
+
+        false_sentence_probs = model.sentence_proba(tweet_wt.tokenize("she pleases te ball"))
+        self.assertLess(false_sentence_probs, 0)
+
+        self.assertLess(false_sentence_probs, correct_sentence_probs)
+
 
 class TestTrigramModel(TestCase):
 
@@ -75,7 +91,7 @@ class TestTrigramModel(TestCase):
         model.fit([])
 
         model.fit(tokenized)
-        assert len(model.vocab) == 21
+        self.assertEqual(21 + 2, len(model.vocabulary()))
 
     def test_predict(self):
         model = TrigramModel(alpha=0.01)
@@ -101,6 +117,18 @@ class TestTrigramModel(TestCase):
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
         assert probs <= 0
 
+    def test_sentence_proba(self):
+        model = TrigramModel(alpha=0.01)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        correct_sentence_probs = model.sentence_proba(tweet_wt.tokenize(test_corpus[0]))
+
+        false_sentence_probs = model.sentence_proba(tweet_wt.tokenize("she pleases te ball"))
+
+        assert correct_sentence_probs > false_sentence_probs
+
 
 class TestLinearInterpolationModel(TestCase):
 
@@ -120,6 +148,7 @@ class TestLinearInterpolationModel(TestCase):
         model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
         model.fit([])
         model.fit(tokenized)
+        self.assertEqual(len(model.vocabulary()), 21 + 2)
 
     def test_predict(self):
         model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
@@ -141,3 +170,33 @@ class TestLinearInterpolationModel(TestCase):
         model.fit(tokenized)
         probs = model.prediction_proba(tweet_wt.tokenize(test_corpus[0][:-3]), "football")
         assert probs <= 0
+
+    def test_sentence_proba(self):
+        model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        correct_sentence_probs = model.sentence_proba(tweet_wt.tokenize(test_corpus[0]))
+
+        false_sentence_probs = model.sentence_proba(tweet_wt.tokenize("she pleases te ball"))
+
+        assert correct_sentence_probs > false_sentence_probs
+
+
+class Test(TestCase):
+    def test_1grams(self):
+        processed = _process_ngrams(tokenized[0], 1)
+        assert processed[0][0] == START_TOKEN
+        assert processed[-1][-1] == END_TOKEN
+
+    def test_process_2grams(self):
+        processed = _process_ngrams(tokenized[0], 2)
+        assert processed[0][0] == START_TOKEN
+        assert processed[-1][-1] == END_TOKEN
+
+    def test_process_3grams(self):
+        processed = _process_ngrams(tokenized[0], 3)
+        assert processed[0][0] == START_TOKEN
+        assert processed[1][0] == START_TOKEN
+        assert processed[-1][-1] == END_TOKEN

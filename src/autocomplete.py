@@ -1,19 +1,29 @@
 import itertools
+import more_itertools
 import math
 from abc import ABCMeta, abstractmethod
 from collections import Counter
+from collections.abc import Collection
 
 from nltk.util import ngrams
 
+# different start symbols aren't supported in nltk's ngrams method
 START_TOKEN = "<start>"
 END_TOKEN = "<end>"
 
 
-class INgramModel:
+class BaseNgramModel:
     """
-    An interface for all N-gram models.
+    Base class for all n-gram models.
     """
     __metaclass__ = ABCMeta
+
+    def __init__(self, alpha: float):
+        if alpha > 1.0 or alpha <= 0:
+            raise ValueError(f"Alpha value must be between 0 (exclusive) and 1 (value given alpha={alpha})")
+        self.alpha = alpha
+
+        self.trained = False
 
     @abstractmethod
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
@@ -22,17 +32,42 @@ class INgramModel:
         :param sentences_tokenized: a list of all sentences. Each sentence is represented as a list of string tokens.
         :return: None
         """
-        pass
+        self.trained = True
 
     @abstractmethod
+    def vocabulary(self) -> Collection[str]:
+        """
+        Get all tokens from the model's vocabulary.
+        :return: a list of all tokens in the model
+        """
+        pass
+
     def predict(self, tokenized_sentence: list[str]) -> str:
         """
         Predict the next word in a given sentence. Uses n-gram probability with Laplace Smoothing.
         :param tokenized_sentence: a list of string tokens
-        :raise Runtime Error: if the model has not been trained
+        :raise RuntimeError: if the model has not been trained
         :return: the most probable token
         """
-        return ""
+        assert tokenized_sentence is not None
+
+        if not self.trained:
+            raise RuntimeError("Model has not been trained.")
+
+        # since we are only looking for the next word, we need not compute the probabilities of all ngrams,
+        # since only the last one changes
+        formatted_sentence = self.format_input(tokenized_sentence)
+        max_prob = - math.inf
+        max_token = None
+
+        for token in self.vocabulary():
+            prob = self.prediction_proba(formatted_sentence, token)
+
+            if prob > max_prob:
+                max_prob = prob
+                max_token = token
+
+        return max_token
 
     @abstractmethod
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
@@ -40,13 +75,40 @@ class INgramModel:
         Get the model's log-probability for a specific token given a sentence.
         :param tokenized_sentence: a list of string tokens
         :param token: the token
-        :raise Runtime Error: if the model has not been trained
+        :raise RuntimeError: if the model has not been trained
         :return: the log2-probability that the token is next
         """
+        assert tokenized_sentence is not None
+
+        if not self.trained:
+            raise RuntimeError("Model has not been trained.")
         return 0
 
+    @abstractmethod
+    def sentence_proba(self, tokenized_sentence: list[str]) -> float:
+        """
+        Calculate the log-probability of an entire sentence.
+        :param tokenized_sentence: a list of string tokens
+        :raise RuntimeError: if the model has not been trained
+        :return: the log2-probability of the sentence
+        """
+        assert tokenized_sentence is not None
+        if not self.trained:
+            raise RuntimeError("Model has not been trained.")
 
-class BigramModel(INgramModel):
+        return 0
+
+    @abstractmethod
+    def format_input(self, tokenized_sentence: list[str]) -> list[str]:
+        """
+        Format the sentence as to include proper START and END tags.
+        :param tokenized_sentence: a list of string tokens
+        :return: the sentence with the appropriate START and END tags
+        """
+        return []
+
+
+class BigramModel(BaseNgramModel):
     """
     A basic bigram model using Laplace Smoothing.
     """
@@ -56,53 +118,42 @@ class BigramModel(INgramModel):
         Create a bigram model.
         :param alpha: the Laplace smoothing parameter. Must be between 0 and 1 (excluding 0)
         """
-        if alpha > 1.0 or alpha <= 0:
-            raise ValueError(f"Alpha value must be between 0 (exclusive) and 1 (value given alpha={alpha})")
+        super().__init__(alpha)
 
-        self.vocab_len = 0
-        self.alpha = alpha
         self.bigram_counter = Counter()
         self.unigram_counter = Counter()
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
-        self.vocab_len = len(set(itertools.chain.from_iterable(sentences_tokenized)))
+        super().fit(sentences_tokenized)
 
         for sentence in sentences_tokenized:
-            formatted_sentence = [START_TOKEN] + sentence + [END_TOKEN]
-            self.unigram_counter.update(_process_ngrams(formatted_sentence, 1))
-            self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
-
-    def predict(self, tokenized_sentence: list[str]) -> str:
-        assert tokenized_sentence is not None
-
-        if self.vocab_len == 0:
-            raise RuntimeError("Model has not been trained.")
-
-        max_prob = - math.inf
-        max_token = None
-
-        for token in self.unigram_counter.keys():
-            prob = self.prediction_proba(tokenized_sentence, token)
-
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
-
-        return max_token
+            # get the strings inside the tuples
+            self.unigram_counter.update([tuple_[0] for tuple_ in _process_ngrams(sentence, 1)])
+            self.bigram_counter.update(_process_ngrams(sentence, 2))
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
-        assert tokenized_sentence is not None
+        super().prediction_proba(tokenized_sentence, token)
 
-        if self.vocab_len == 0:
-            raise RuntimeError("Model has not been trained.")
+        return (math.log2((self.bigram_counter[(tokenized_sentence[-1], token)] + self.alpha)) -
+                math.log2(self.unigram_counter[token] + self.alpha * len(self.vocabulary())))
 
-        formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence
+    def sentence_proba(self, tokenized_sentence: list[str]) -> float:
+        super().sentence_proba(tokenized_sentence)
+        formatted_sentence = self.format_input(tokenized_sentence)
 
-        return (math.log2((self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha)) -
-                math.log2(self.unigram_counter[token] + self.alpha * self.vocab_len))
+        probs = 0
+        for token1, token2 in more_itertools.windowed(formatted_sentence, 2):
+            probs += self.prediction_proba([token1], token2)
+        return probs
+
+    def format_input(self, tokenized_sentence: list[str]) -> list[str]:
+        return [START_TOKEN] + tokenized_sentence + [END_TOKEN]
+
+    def vocabulary(self) -> Collection[str]:
+        return self.unigram_counter.keys()
 
 
-class TrigramModel(INgramModel):
+class TrigramModel(BaseNgramModel):
     """
     A basic trigram model using Laplace Smoothing.
     """
@@ -112,53 +163,45 @@ class TrigramModel(INgramModel):
         Create a trigram model.
         :param alpha: the Laplace smoothing parameter. Must be between 0 and 1 (excluding 0)
         """
-        if alpha > 1.0 or alpha <= 0:
-            raise ValueError(f"Alpha value must be between 0 (exclusive) and 1 (value given alpha={alpha})")
+        super().__init__(alpha)
 
         self.vocab = {}
-        self.alpha = alpha
         self.bigram_counter = Counter()
         self.trigram_counter = Counter()
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
-        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized))
+        super().fit(sentences_tokenized)
+
+        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized)).union({START_TOKEN, END_TOKEN})
 
         for sentence in sentences_tokenized:
-            formatted_sentence = [START_TOKEN] + [START_TOKEN] + sentence + [END_TOKEN]
-            self.bigram_counter.update(_process_ngrams(formatted_sentence, 2))
-            self.trigram_counter.update(_process_ngrams(formatted_sentence, 3))
-
-    def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
-        assert tokenized_sentence is not None
-
-        if self.vocab == {}:
-            raise RuntimeError("Model has not been trained.")
-
-        max_prob = - math.inf
-        max_token = None
-
-        for token in self.vocab:
-            prob = self.prediction_proba(tokenized_sentence, token)
-
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
-
-        return max_token
+            self.bigram_counter.update(_process_ngrams(sentence, 2))
+            self.trigram_counter.update(_process_ngrams(sentence, 3))
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
-        assert tokenized_sentence is not None
+        super().prediction_proba(tokenized_sentence, token)
 
-        if self.vocab == {}:
-            raise RuntimeError("Model has not been trained.")
+        return (math.log2(self.trigram_counter[(tokenized_sentence[-2], tokenized_sentence[-1], token)] + self.alpha) -
+                math.log2(self.bigram_counter[(tokenized_sentence[-1], token)] + self.alpha * len(self.vocab)))
 
-        formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence
-        return (math.log2(self.trigram_counter[(formatted_sentence[-2], formatted_sentence[-1], token)] + self.alpha) -
-                math.log2(self.bigram_counter[(formatted_sentence[-1], token)] + self.alpha * len(self.vocab)))
+    def sentence_proba(self, tokenized_sentence: list[str]) -> float:
+        super().sentence_proba(tokenized_sentence)
+        formatted_sentence = self.format_input(tokenized_sentence)
+
+        probs = 0
+        for token1, token2, token3 in more_itertools.windowed(formatted_sentence, 3):
+            probs += self.prediction_proba([token1, token2], token3)
+        return probs
+
+    def format_input(self, tokenized_sentence: list[str]) -> list[str]:
+        return [START_TOKEN] + [START_TOKEN] + tokenized_sentence + [END_TOKEN]
+
+    def vocabulary(self) -> Collection[str]:
+        return self.vocab
 
 
 # I could generalize this to support combinations of unigrams, bigrams and trigrams, but we'll see
-class LinearInterpolationModel(INgramModel):
+class LinearInterpolationModel(BaseNgramModel):
     """
     A model using linear interpolation between a bigram and trigram model.
     """
@@ -166,36 +209,23 @@ class LinearInterpolationModel(INgramModel):
     def __init__(self, alpha: float, lamda: float):
         """
         Create a linear interpolation model between a bigram and trigram model.
-        :param alpha: the Laplace smoothing parameter. Must be between 0 and 1 (excluding 0)
+        :param alpha: the Laplace smoothing parameter for the internal models. Must be between 0 and 1 (excluding 0)
         :param lamda: the interpolation parameter, where probability = lambda * (bigram probability)
         + (1-lamda) * (trigram probability)
         """
+        super().__init__(alpha)
+
         if lamda > 1.0 or lamda <= 0:
-            raise ValueError(f"Lamda value must be between 0 (exclusive) and 1 (value given alpha={lamda})")
+            raise ValueError(f"Lamda value must be between 0 (exclusive) and 1 (value given lamda={lamda})")
+        self.lamda = lamda
 
         self.bigram_model = BigramModel(alpha)
         self.trigram_model = TrigramModel(alpha)
-        self.lamda = lamda
 
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        super().fit(sentences_tokenized)
         self.bigram_model.fit(sentences_tokenized)
         self.trigram_model.fit(sentences_tokenized)
-
-    def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
-        if self.bigram_model.vocab_len == 0:
-            raise RuntimeError("Model has not been trained.")
-
-        # no need for sentence checking here, the underlying classes will take care of it
-        max_prob = - math.inf
-        max_token = None
-
-        for token in self.trigram_model.vocab:
-            prob = self.prediction_proba(tokenized_sentence, token)
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
-
-        return max_token
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
         """
@@ -205,9 +235,26 @@ class LinearInterpolationModel(INgramModel):
         :raise Runtime Error: if the model has not been trained
         :return: the weighted probability that the token is next
         """
-        bigram_prob = self.bigram_model.prediction_proba(tokenized_sentence, token)
-        trigram_prob = self.trigram_model.prediction_proba(tokenized_sentence, token)
+        super().prediction_proba(tokenized_sentence, token)
+
+        bigram_format = self.bigram_model.format_input(tokenized_sentence)
+        bigram_prob = self.bigram_model.prediction_proba(bigram_format, token)
+
+        trigram_format = self.trigram_model.format_input(tokenized_sentence)
+        trigram_prob = self.trigram_model.prediction_proba(trigram_format, token)
         return self.lamda * bigram_prob + (1 - self.lamda) * trigram_prob
+
+    def sentence_proba(self, tokenized_sentence: list[str]) -> float:
+        super().sentence_proba(tokenized_sentence)
+
+        return (self.lamda * self.bigram_model.sentence_proba(tokenized_sentence)
+                + (1 - self.lamda) * self.trigram_model.sentence_proba(tokenized_sentence))
+
+    def vocabulary(self) -> Collection[str]:
+        return set(self.bigram_model.vocabulary()).union(set(self.trigram_model.vocabulary()))
+
+    def format_input(self, tokenized_sentence: list[str]) -> list[str]:
+        return tokenized_sentence
 
 
 def _process_ngrams(tokenized_sentence: list[str], ngram: int) -> list[tuple]:
@@ -217,5 +264,10 @@ def _process_ngrams(tokenized_sentence: list[str], ngram: int) -> list[tuple]:
     :param ngram: whether the ngrams will be unigrams, bigrams etc
     :return: a list of ngrams representing the original sentence
     """
-    return [gram for gram in ngrams(tokenized_sentence, ngram, pad_left=True, pad_right=True,
-                                    left_pad_symbol=START_TOKEN, right_pad_symbol=END_TOKEN)]
+
+    ngram_sent = [gram for gram in ngrams(tokenized_sentence, ngram, pad_left=True, pad_right=True,
+                                          left_pad_symbol=START_TOKEN, right_pad_symbol=END_TOKEN)]
+    if ngram == 1:
+        return [tuple([START_TOKEN], )] + ngram_sent + [tuple([END_TOKEN], )]
+    else:
+        return ngram_sent
