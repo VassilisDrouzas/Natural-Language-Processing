@@ -42,7 +42,6 @@ class BaseNgramModel:
         """
         pass
 
-    @abstractmethod
     def predict(self, tokenized_sentence: list[str]) -> str:
         """
         Predict the next word in a given sentence. Uses n-gram probability with Laplace Smoothing.
@@ -54,7 +53,21 @@ class BaseNgramModel:
 
         if not self.trained:
             raise RuntimeError("Model has not been trained.")
-        return ""
+
+        # since we are only looking for the next word, we need not compute the probabilities of all ngrams,
+        # since only the last one changes
+        formatted_sentence = self.format_input(tokenized_sentence)
+        max_prob = - math.inf
+        max_token = None
+
+        for token in self.vocabulary():
+            prob = self.prediction_proba(formatted_sentence, token)
+
+            if prob > max_prob:
+                max_prob = prob
+                max_token = token
+
+        return max_token
 
     @abstractmethod
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
@@ -117,24 +130,6 @@ class BigramModel(BaseNgramModel):
             self.unigram_counter.update(_process_ngrams(sentence, 1))
             self.bigram_counter.update(_process_ngrams(sentence, 2))
 
-    def predict(self, tokenized_sentence: list[str]) -> str:
-        # since we are only looking for the next word, we need not compute the probabilities of all ngrams,
-        # since only the last one changes
-        super().predict(tokenized_sentence)
-
-        formatted_sentence = self.format_input(tokenized_sentence)
-        max_prob = - math.inf
-        max_token = None
-
-        for token in self.vocabulary():
-            prob = self.prediction_proba(formatted_sentence, token)
-
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
-
-        return max_token
-
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
         super().prediction_proba(tokenized_sentence, token)
 
@@ -181,22 +176,6 @@ class TrigramModel(BaseNgramModel):
         for sentence in sentences_tokenized:
             self.bigram_counter.update(_process_ngrams(sentence, 2))
             self.trigram_counter.update(_process_ngrams(sentence, 3))
-
-    def predict(self, tokenized_sentence: list[str]) -> str:
-        super().predict(tokenized_sentence)
-
-        max_prob = - math.inf
-        max_token = None
-        formatted_sentence = [START_TOKEN] + [START_TOKEN] + tokenized_sentence + [END_TOKEN]
-
-        for token in self.vocabulary():
-            prob = self.prediction_proba(formatted_sentence, token)
-
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
-
-        return max_token
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
         super().prediction_proba(tokenized_sentence, token)
@@ -246,21 +225,6 @@ class LinearInterpolationModel(BaseNgramModel):
         super().fit(sentences_tokenized)
         self.bigram_model.fit(sentences_tokenized)
         self.trigram_model.fit(sentences_tokenized)
-
-    def predict(self, tokenized_sentence: list[str]) -> tuple[str, float]:
-        super().predict(tokenized_sentence)
-
-        # no need for sentence checking here, the underlying classes will take care of it
-        max_prob = - math.inf
-        max_token = None
-
-        for token in self.trigram_model.vocab:
-            prob = self.prediction_proba(tokenized_sentence, token)
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
-
-        return max_token
 
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
         """
