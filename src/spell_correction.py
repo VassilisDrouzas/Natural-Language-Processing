@@ -3,12 +3,12 @@ from typing import Callable, Any
 
 import Levenshtein
 
-import autocomplete
+from src.autocomplete import BigramModel, START_TOKEN
 
 
 class BigramSpellCorrector:
 
-    def __init__(self, language_model: autocomplete.BigramModel, lamda1: float, lamda2: float,
+    def __init__(self, language_model: BigramModel, lamda1: float, lamda2: float,
                  conditional_model: Callable[[str, str], float] = Levenshtein.distance):
         self.language_model = language_model
         self.lamda1 = lamda1
@@ -38,7 +38,7 @@ class BigramSpellCorrector:
         def score_fn(candidate_sentence): return self.evaluate(original_tokenized_sentence, candidate_sentence)
 
         decoder = _SentenceBeamSearchDecoder(max_depth, beam_width, candidate_fn, score_fn)
-        return decoder.search([autocomplete.START_TOKEN], 0.)
+        return decoder.search([START_TOKEN], 0.)
 
 
 class _SentenceBeamSearchDecoder:
