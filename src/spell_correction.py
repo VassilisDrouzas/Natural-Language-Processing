@@ -19,11 +19,15 @@ class BigramSpellCorrector:
         self.conditional_model = conditional_model
 
     def evaluate(self, original_tokenized_sentence: list[str], target_tokenized_sentence: list[str]) -> float:
-        assert len(original_tokenized_sentence) == len(target_tokenized_sentence), "Sentences must be of same length."
+        # clip sentences to same length
+        clipped_length = min(len(original_tokenized_sentence), len(target_tokenized_sentence))
+        clipped_original_sentence = original_tokenized_sentence[:clipped_length]
+        clipped_target_sentence = target_tokenized_sentence[:clipped_length]
 
-        lm_score = self.language_model.sentence_proba(target_tokenized_sentence)
+        # compute probability scores
+        lm_score = self.language_model.sentence_proba(clipped_target_sentence)
         edit_score = sum([-math.log2(self.conditional_model(original_word, other_word) + 1)
-                          for original_word, other_word in zip(original_tokenized_sentence, target_tokenized_sentence)])
+                          for original_word, other_word in zip(clipped_original_sentence, clipped_target_sentence)])
 
         return self.lamda1 * lm_score + self.lamda2 * edit_score
 
@@ -35,7 +39,10 @@ class BigramSpellCorrector:
 
     def spell_correct(self, original_tokenized_sentence: list[str], max_depth: int, beam_width: int):
         def candidate_fn(state): return self.generate_candidates(state)
-        def score_fn(candidate_sentence): return self.evaluate(original_tokenized_sentence, candidate_sentence)
+
+        def score_fn(candidate_sentence): return self.evaluate(
+            self.language_model.format_input(original_tokenized_sentence),
+            candidate_sentence)
 
         decoder = _SentenceBeamSearchDecoder(max_depth, beam_width, candidate_fn, score_fn)
         return decoder.search([START_TOKEN], 0.)

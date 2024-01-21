@@ -24,8 +24,8 @@ class TestBigramSpellCorrector(TestCase):
         self.model = BigramSpellCorrector(lang_model, 0.5, 0.5)
 
     def test_evaluate(self):
-        text1 = tweet_wt.tokenize(test_corpus[3])
-        text2 = tweet_wt.tokenize(test_corpus[4])
+        text1 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[3]))
+        text2 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[4]))
 
         eval1 = self.model.evaluate(text1, text1)
         eval2 = self.model.evaluate(text1, text2)
@@ -37,8 +37,18 @@ class TestBigramSpellCorrector(TestCase):
         self.assertGreater(len(candidates), 0)
         print(candidates)
 
-    def test_spell_correct(self):
-        self.model.spell_correct(tokenized[0], 5, 2)
+    def test_spell_correct_unknown_sent(self):
+        correction = self.model.spell_correct(tokenized[0], 5, 2)
+        self.assertIsNotNone(correction)
+        self.assertGreater(len(correction), 0)
+        print(f"Original: {tokenized[0]} \nModel: {correction}")
+
+    def test_spell_correct_typo(self):
+        false_sent = "he prays god ftball"
+        correction = self.model.spell_correct(tweet_wt.tokenize(false_sent), 5, 2)
+        self.assertIsNotNone(correction)
+        self.assertGreater(len(correction), 0)
+        print(f"Original: {false_sent} \nModel: {correction}")
 
 
 # test example by Foivos Anagnostou
