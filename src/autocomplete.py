@@ -16,7 +16,6 @@ class BaseNgramModel:
     """
     Base class for all n-gram models.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, alpha: float):
         if alpha > 1.0 or alpha <= 0:
