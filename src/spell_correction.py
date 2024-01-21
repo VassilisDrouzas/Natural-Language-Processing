@@ -29,7 +29,7 @@ class BigramSpellCorrector:
 
     def generate_candidates(self, temp_sentence: list[str]) -> list[list[str]]:
         last_word = temp_sentence[-1]
-        next_words = [word for (prev_word, word) in
+        next_words = [word for ((prev_word, word), occ) in
                       self.language_model.bigram_counter.items() if prev_word == last_word]
         return [temp_sentence + [next_word] for next_word in next_words]
 
@@ -65,6 +65,9 @@ class _SentenceBeamSearchDecoder:
 
             new_candidates = sorted(new_candidates, key=lambda x: x[1], reverse=True)
             candidates = new_candidates[:self.beam_width]
+
+        if len(candidates) == 0:
+            raise ValueError("Can not build sentence: No suitable candidates found.")
 
         best_sequence, best_prob = max(candidates, key=lambda x: x[1])
         return best_sequence

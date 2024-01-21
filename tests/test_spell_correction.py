@@ -32,11 +32,13 @@ class TestBigramSpellCorrector(TestCase):
 
         self.assertLess(eval2, eval1)
 
-    #def test_generate_candidates(self):
-        #self.fail()
+    def test_generate_candidates(self):
+        candidates = self.model.generate_candidates(tweet_wt.tokenize(START_TOKEN + " he plays"))
+        self.assertGreater(len(candidates), 0)
+        print(candidates)
 
     def test_spell_correct(self):
-        self.fail()
+        self.model.spell_correct(tokenized[0], 5, 2)
 
 
 # test example by Foivos Anagnostou
