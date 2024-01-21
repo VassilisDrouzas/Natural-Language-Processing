@@ -1,10 +1,10 @@
 import itertools
-import more_itertools
 import math
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from collections import Counter
 from collections.abc import Collection
 
+import more_itertools
 from nltk.util import ngrams
 
 # different start symbols aren't supported in nltk's ngrams method
@@ -16,7 +16,6 @@ class BaseNgramModel:
     """
     Base class for all n-gram models.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, alpha: float):
         if alpha > 1.0 or alpha <= 0:
