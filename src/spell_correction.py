@@ -4,7 +4,7 @@ from typing import Callable
 
 import Levenshtein
 
-from src.autocomplete import BigramModel, START_TOKEN, BaseNgramModel
+from src.autocomplete import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel
 from src.beam_search import SentenceBeamSearchDecoder
 
 
@@ -32,7 +32,11 @@ class BaseSpellCorrector:
             candidate_sentence)
 
         decoder = SentenceBeamSearchDecoder(max_depth, beam_width, candidate_fn, score_fn)
-        return decoder.search([START_TOKEN], 0.)
+        return decoder.search(self._initial_search_state(), 0.)
+
+    @abstractmethod
+    def _initial_search_state(self) -> list[str]:
+        pass
 
     @abstractmethod
     def generate_candidates(self, temp_sentence: list[str]) -> list[list[str]]:
@@ -68,4 +72,29 @@ class BigramSpellCorrector(BaseSpellCorrector):
         next_words = [word for ((prev_word, word), occ) in
                       self.language_model.bigram_counter.items() if prev_word == last_word]
         return [temp_sentence + [next_word] for next_word in next_words]
+
+    def _initial_search_state(self) -> list[str]:
+        return [START_TOKEN]
+
+class TrigramSpellCorrector(BaseSpellCorrector):
+    def __init__(self, language_model: BigramModel, lamda1: float, lamda2: float,
+                 conditional_model: Callable[[str, str], float] = Levenshtein.distance):
+        super().__init__(language_model, lamda1, lamda2, conditional_model)
+
+        if not isinstance(language_model, TrigramModel):
+            raise ValueError("The Bigram spell corrector needs a bigram model to function properly.")
+
+    def generate_candidates(self, temp_sentence: list[str]) -> list[list[str]]:
+        last_word = temp_sentence[-1]
+        second_last_word = temp_sentence[-2]
+        # the IDE will complain about the `trigram_counter` variable, but we ensure it is of the correct subclass in the
+        # constructor
+        next_words = [word3 for ((word1, word2, word3), occ) in
+                      self.language_model.trigram_counter.items() if word1 == second_last_word and word2 == last_word]
+        return [temp_sentence + [next_word] for next_word in next_words]
+
+    def _initial_search_state(self) -> list[str]:
+        return [START_TOKEN, START_TOKEN]
+
+
 
