@@ -3,7 +3,7 @@ from typing import Callable
 
 class SentenceBeamSearchDecoder:
     """
-    A Beam Search Decoder.
+    A Beam Search Decoder. Used internally for the various language models.
     """
 
     def __init__(self, max_depth: int, beam_width: int, candidate_generator_fn: Callable[[list[str]], list[list[str]]],

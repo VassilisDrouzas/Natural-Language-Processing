@@ -10,7 +10,7 @@ from src.beam_search import SentenceBeamSearchDecoder
 
 class BaseSpellCorrector:
     """
-    Base class for all n-gram-based spell checking models.
+    Abstract base class for all n-gram-based spell checking models.
     These models take into account a given sentence and predict the best correction.
     """
 
