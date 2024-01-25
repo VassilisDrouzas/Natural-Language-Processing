@@ -24,23 +24,6 @@ class BaseNgramModel:
 
         self.trained = False
 
-    @abstractmethod
-    def fit(self, sentences_tokenized: list[list[str]]) -> None:
-        """
-        Train the model on a tokenized selection of sentences.
-        :param sentences_tokenized: a list of all sentences. Each sentence is represented as a list of string tokens.
-        :return: None
-        """
-        self.trained = True
-
-    @abstractmethod
-    def vocabulary(self) -> Collection[str]:
-        """
-        Get all tokens from the model's vocabulary.
-        :return: a list of all tokens in the model
-        """
-        pass
-
     def predict(self, tokenized_sentence: list[str]) -> str:
         """
         Predict the next word in a given sentence. Uses n-gram probability with Laplace Smoothing.
@@ -67,6 +50,23 @@ class BaseNgramModel:
                 max_token = token
 
         return max_token
+
+    @abstractmethod
+    def fit(self, sentences_tokenized: list[list[str]]) -> None:
+        """
+        Train the model on a tokenized selection of sentences.
+        :param sentences_tokenized: a list of all sentences. Each sentence is represented as a list of string tokens.
+        :return: None
+        """
+        self.trained = True
+
+    @abstractmethod
+    def vocabulary(self) -> Collection[str]:
+        """
+        Get all tokens from the model's vocabulary.
+        :return: a list of all tokens in the model
+        """
+        pass
 
     @abstractmethod
     def prediction_proba(self, tokenized_sentence: list[str], token: str) -> float:
