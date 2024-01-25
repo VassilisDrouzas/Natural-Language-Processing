@@ -37,7 +37,7 @@ class TestBigramModel(TestCase):
 
         model.fit(tokenized)
         # vocab + meta-tokens
-        assert len(model.vocabulary()) == 21 + 2
+        self.assertEqual(len(model.vocabulary()), 27 + 3)
 
     def test_predict(self):
         model = BigramModel(alpha=0.01)
@@ -104,7 +104,7 @@ class TestTrigramModel(TestCase):
         model.fit([])
 
         model.fit(tokenized)
-        self.assertEqual(21 + 3, len(model.vocabulary()))
+        self.assertEqual(27 + 3, len(model.vocabulary()))
         print(model.vocabulary())
 
     def test_predict(self):
@@ -162,7 +162,7 @@ class TestLinearInterpolationModel(TestCase):
         model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
         model.fit([])
         model.fit(tokenized)
-        self.assertEqual(len(model.vocabulary()), 21 + 3)
+        self.assertEqual(len(model.vocabulary()), 27 + 3)
 
     def test_predict(self):
         model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
