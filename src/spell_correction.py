@@ -99,8 +99,8 @@ class BigramSpellCorrector(BaseSpellCorrector):
         """
         super().__init__(language_model, lamda1, lamda2, conditional_model)
 
-        #if not isinstance(language_model, BigramModel):                                                            #had to comment out otherwise it would raise the error on my notebook
-            #raise ValueError("The Bigram spell corrector needs a bigram model to function properly.")
+        if not isinstance(language_model, BigramModel):                                                            #had to comment out otherwise it would raise the error on my notebook
+            raise ValueError("The Bigram spell corrector needs a bigram model to function properly.")
 
     def generate_candidates(self, temp_sentence: list[str]) -> list[list[str]]:
         """
