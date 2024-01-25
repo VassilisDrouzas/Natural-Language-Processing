@@ -40,10 +40,17 @@ class TestBigramSpellCorrector(TestCase):
         print(candidates)
 
     def test_spell_correct_unknown_sent(self):
-        correction = self.model.spell_correct(tokenized[0], 5, 2)
-        self.assertIsNotNone(correction)
-        self.assertGreater(len(correction), 0)
-        print(f"Original: {tokenized[0]} \nModel: {correction}")
+        correction1 = self.model.spell_correct(tokenized[0], 5, 2)
+        self.assertIsNotNone(correction1)
+        self.assertGreater(len(correction1), 0)
+        print(f"Original: {tokenized[0]} \nModel: {correction1}")
+
+        correction2 = self.model.spell_correct(tokenized[5], 5, 2)
+        self.assertIsNotNone(correction2)
+        self.assertGreater(len(correction2), 0)
+        print(f"Original: {tokenized[5]} \nModel: {correction2}")
+
+        self.assertNotEqual(correction2, correction1)
 
     def test_spell_correct_typo(self):
         false_sent = "he prays god ftball"
