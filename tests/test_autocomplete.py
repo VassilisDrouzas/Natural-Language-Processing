@@ -1,5 +1,5 @@
 from unittest import TestCase
-from src.autocomplete import (BigramModel, TrigramModel, LinearInterpolationModel, _process_ngrams, START_TOKEN,
+from autocomplete import (BigramModel, TrigramModel, LinearInterpolationModel, _process_ngrams, START_TOKEN,
                               END_TOKEN)
 from nltk.tokenize import TweetTokenizer
 
