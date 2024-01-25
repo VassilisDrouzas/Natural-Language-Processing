@@ -1,6 +1,6 @@
 from unittest import TestCase
-from src.autocomplete import *
-from src.autocomplete import _process_ngrams
+from src.ngram_models import *
+from src.ngram_models import _process_ngrams
 from nltk.tokenize import TweetTokenizer
 
 

@@ -4,7 +4,7 @@ from typing import Callable
 
 import Levenshtein
 
-from src.autocomplete import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel
+from src.ngram_models import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel
 from src.beam_search import SentenceBeamSearchDecoder
 
 
