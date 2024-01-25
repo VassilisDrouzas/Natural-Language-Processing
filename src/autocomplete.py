@@ -7,9 +7,11 @@ from collections.abc import Collection
 import more_itertools
 from nltk.util import ngrams
 
+
 # different start symbols aren't supported in nltk's ngrams method
 START_TOKEN = "<start>"
 END_TOKEN = "<end>"
+UNKNOWN_TOKEN = "<UNK>"
 
 
 class BaseNgramModel:
@@ -27,6 +29,7 @@ class BaseNgramModel:
     def predict(self, tokenized_sentence: list[str]) -> str:
         """
         Predict the next word in a given sentence. Uses n-gram probability with Laplace Smoothing.
+        The START and END tokens are automatically appended to the sentence.
         :param tokenized_sentence: a list of string tokens
         :raise RuntimeError: if the model has not been trained
         :return: the most probable token
@@ -43,11 +46,16 @@ class BaseNgramModel:
         max_token = None
 
         for token in self.vocabulary():
-            prob = self.prediction_proba(formatted_sentence, token)
 
-            if prob > max_prob:
-                max_prob = prob
-                max_token = token
+            # Do not consider outputting Unknown tokens.
+            # We still want to keep the unknown tokens during fitting however, to not disturb
+            # the actual word distribution.
+            if token != UNKNOWN_TOKEN:
+                prob = self.prediction_proba(formatted_sentence, token)
+
+                if prob > max_prob:
+                    max_prob = prob
+                    max_token = token
 
         return max_token
 
@@ -146,7 +154,7 @@ class BigramModel(BaseNgramModel):
         return probs
 
     def format_input(self, tokenized_sentence: list[str]) -> list[str]:
-        return [START_TOKEN] + tokenized_sentence + [END_TOKEN]
+        return [START_TOKEN] + tokenized_sentence
 
     def vocabulary(self) -> Collection[str]:
         return self.unigram_counter.keys()
@@ -171,7 +179,8 @@ class TrigramModel(BaseNgramModel):
     def fit(self, sentences_tokenized: list[list[str]]) -> None:
         super().fit(sentences_tokenized)
 
-        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized)).union({START_TOKEN, END_TOKEN})
+        self.vocab = set(itertools.chain.from_iterable(sentences_tokenized)).union(
+            {START_TOKEN, END_TOKEN, UNKNOWN_TOKEN})
 
         for sentence in sentences_tokenized:
             self.bigram_counter.update(_process_ngrams(sentence, 2))
@@ -193,7 +202,7 @@ class TrigramModel(BaseNgramModel):
         return probs
 
     def format_input(self, tokenized_sentence: list[str]) -> list[str]:
-        return [START_TOKEN] + [START_TOKEN] + tokenized_sentence + [END_TOKEN]
+        return [START_TOKEN] + [START_TOKEN] + tokenized_sentence
 
     def vocabulary(self) -> Collection[str]:
         return self.vocab

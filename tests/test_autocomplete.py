@@ -1,7 +1,8 @@
 from unittest import TestCase
-from autocomplete import (BigramModel, TrigramModel, LinearInterpolationModel, _process_ngrams, START_TOKEN,
-                              END_TOKEN)
+from src.autocomplete import *
+from src.autocomplete import _process_ngrams
 from nltk.tokenize import TweetTokenizer
+
 
 test_corpus = ["he plays football",
                "he plays football",
@@ -9,7 +10,10 @@ test_corpus = ["he plays football",
                "she plays good music",
                "he prays to god",
                "please buy me the other ball,"
-               "he pleases the other players by playing good football"]
+               "he pleases the other players by playing good football",
+               f"they {UNKNOWN_TOKEN} from the other players by playing good football",
+               f"they {UNKNOWN_TOKEN} do not play good football",
+               "they like to play good football"]
 
 tweet_wt = TweetTokenizer()
 tokenized = [tweet_wt.tokenize(sentence) for sentence in test_corpus]
@@ -73,6 +77,15 @@ class TestBigramModel(TestCase):
 
         self.assertLess(false_sentence_probs, correct_sentence_probs)
 
+    def test_unknown(self):
+        model = BigramModel(alpha=0.01)
+        self.assertRaises(AssertionError, model.sentence_proba, None)
+        self.assertRaises(RuntimeError, model.sentence_proba, test_corpus[0])
+
+        model.fit(tokenized)
+        self.assertNotEqual(UNKNOWN_TOKEN, model.predict(["they"]))
+        self.assertEqual("like", model.predict(["they"]))
+
 
 class TestTrigramModel(TestCase):
 
@@ -91,7 +104,8 @@ class TestTrigramModel(TestCase):
         model.fit([])
 
         model.fit(tokenized)
-        self.assertEqual(21 + 2, len(model.vocabulary()))
+        self.assertEqual(21 + 3, len(model.vocabulary()))
+        print(model.vocabulary())
 
     def test_predict(self):
         model = TrigramModel(alpha=0.01)
@@ -148,7 +162,7 @@ class TestLinearInterpolationModel(TestCase):
         model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
         model.fit([])
         model.fit(tokenized)
-        self.assertEqual(len(model.vocabulary()), 21 + 2)
+        self.assertEqual(len(model.vocabulary()), 21 + 3)
 
     def test_predict(self):
         model = LinearInterpolationModel(alpha=0.01, lamda=0.5)
