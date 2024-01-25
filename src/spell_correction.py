@@ -126,7 +126,7 @@ class TrigramSpellCorrector(BaseSpellCorrector):
     Spell corrector based on Trigram language model.
     """
 
-    def __init__(self, language_model: BigramModel, lamda1: float, lamda2: float,
+    def __init__(self, language_model: TrigramModel, lamda1: float, lamda2: float,
                  conditional_model: Callable[[str, str], float] = Levenshtein.distance):
         """
         Initialize the TrigramSpellCorrector.

@@ -20,7 +20,7 @@ class SentenceBeamSearchDecoder:
             new_candidates = []
             for candidate, prob in candidates:
                 for next_state in self.candidate_generator_fn(candidate):
-                    new_prob = prob * self.score_fn(next_state)
+                    new_prob = prob + self.score_fn(next_state)
                     new_candidates.append((next_state, new_prob))
 
             new_candidates = sorted(new_candidates, key=lambda x: x[1], reverse=True)
