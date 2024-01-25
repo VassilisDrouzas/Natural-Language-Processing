@@ -194,7 +194,9 @@ class TrigramModel(BaseNgramModel):
 
     def sentence_proba(self, tokenized_sentence: list[str]) -> float:
         super().sentence_proba(tokenized_sentence)
-        formatted_sentence = self.format_input(tokenized_sentence)
+
+        # ignore P(start|start) but not P(start|1st_word)
+        formatted_sentence = self.format_input(tokenized_sentence)[1:]
 
         probs = 0
         for token1, token2, token3 in more_itertools.windowed(formatted_sentence, 3):
