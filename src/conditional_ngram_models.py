@@ -14,19 +14,22 @@ class BaseSpellCorrector:
     These models take into account a given sentence and predict the best correction.
     """
 
-    def __init__(self, language_model: BaseNgramModel, lamda1: float, lamda2: float,
+    def __init__(self, language_model: BaseNgramModel, lamda: float,
                  conditional_model: Callable[[str, str], float] = Levenshtein.distance):
         """
         Initialize the BaseSpellCorrector.
         :param language_model: The n-gram language model used for prediction.
-        :param lamda1: Weight for language model score in the final evaluation.
-        :param lamda2: Weight for edit distance score in the final evaluation.
+        :param lamda: Weight for language model score in the final evaluation.
+        The weight for the edit distance score will correspondingly be 1-lambda. Values must be between 0 and 1.
         :param conditional_model: The conditional model used for edit distance calculation.
                                   Defaults to Levenshtein distance.
         """
+        if lamda > 1.0 or lamda <= 0:
+            raise ValueError(f"Lamda value must be between 0 (exclusive) and 1 (value given alpha={lamda})")
+
         self.language_model = language_model
-        self.lamda1 = lamda1
-        self.lamda2 = lamda2
+        self.lamda1 = lamda
+        self.lamda2 = 1 - lamda
         self.conditional_model = conditional_model
 
     @abstractmethod
@@ -84,18 +87,17 @@ class BigramSpellCorrector(BaseSpellCorrector):
     Spell corrector based on a Bigram language model.
     """
 
-    def __init__(self, language_model: BigramModel, lamda1: float, lamda2: float,
+    def __init__(self, language_model: BigramModel, lamda: float,
                  conditional_model: Callable[[str, str], float] = Levenshtein.distance):
         """
         Initialize the BigramSpellCorrector.
-        :param language_model: The Bigram language model used for prediction.
-        :param lamda1: Weight for language model score in the final evaluation.
-        :param lamda2: Weight for edit distance score in the final evaluation.
+        :param language_model: The n-gram language model used for prediction.
+        :param lamda: Weight for language model score in the final evaluation.
+        The weight for the edit distance score will correspondingly be 1-lambda. Values must be between 0 and 1.
         :param conditional_model: The conditional model used for edit distance calculation.
                                   Defaults to Levenshtein distance.
-        :raises ValueError: If the provided language_model is not an instance of BigramModel.
         """
-        super().__init__(language_model, lamda1, lamda2, conditional_model)
+        super().__init__(language_model, lamda, conditional_model)
 
         if not isinstance(language_model, BigramModel):                                                            #had to comment out otherwise it would raise the error on my notebook
             raise ValueError("The Bigram spell corrector needs a bigram model to function properly.")
@@ -124,18 +126,17 @@ class TrigramSpellCorrector(BaseSpellCorrector):
     Spell corrector based on Trigram language model.
     """
 
-    def __init__(self, language_model: TrigramModel, lamda1: float, lamda2: float,
+    def __init__(self, language_model: TrigramModel, lamda: float,
                  conditional_model: Callable[[str, str], float] = Levenshtein.distance):
         """
         Initialize the TrigramSpellCorrector.
-        :param language_model: The Trigram language model used for prediction.
-        :param lamda1: Weight for language model score in the final evaluation.
-        :param lamda2: Weight for edit distance score in the final evaluation.
+        :param language_model: The n-gram language model used for prediction.
+        :param lamda: Weight for language model score in the final evaluation.
+        The weight for the edit distance score will correspondingly be 1-lambda. Values must be between 0 and 1.
         :param conditional_model: The conditional model used for edit distance calculation.
                                   Defaults to Levenshtein distance.
-        :raises ValueError: If the provided language_model is not an instance of TrigramModel.
         """
-        super().__init__(language_model, lamda1, lamda2, conditional_model)
+        super().__init__(language_model, lamda, conditional_model)
 
         if not isinstance(language_model, TrigramModel):
             raise ValueError("The Trigram spell corrector needs a trigram model to function properly.")
