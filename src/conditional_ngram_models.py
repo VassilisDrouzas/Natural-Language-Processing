@@ -62,7 +62,8 @@ class BaseSpellCorrector:
 
         formatted_sentence = self.language_model.format_input(original_tokenized_sentence) + [END_TOKEN]
         decoder = SentenceBeamSearchDecoder(len(formatted_sentence), beam_width, candidate_fn, score_fn)
-        return decoder.search(self._initial_search_state(), 0.)
+        response = decoder.search(self._initial_search_state(), 0.)
+        return [token for token in response if token != START_TOKEN and token != END_TOKEN]
 
     def evaluate(self, original_tokenized_sentence: list[str], target_tokenized_sentence: list[str]) -> float:
         """
