@@ -16,7 +16,7 @@ class SentenceBeamSearchDecoder:
     def search(self, initial_state: list[str], initial_state_score: float) -> list[str]:
         candidates = [(initial_state, initial_state_score)]
 
-        for depth in range(self.max_depth):
+        for depth in range(self.max_depth - 1):
             new_candidates = []
             for candidate, prob in candidates:
                 for next_state in self.candidate_generator_fn(candidate):
@@ -27,7 +27,7 @@ class SentenceBeamSearchDecoder:
             candidates = new_candidates[:self.beam_width]
 
         if len(candidates) == 0:
-            raise ValueError("Can not build sentence: No suitable candidates found.")
+            raise ValueError(f"Can not build sentence: No suitable words found for word '{candidate}''.")
 
         best_sequence, best_prob = max(candidates, key=lambda x: x[1])
         return best_sequence

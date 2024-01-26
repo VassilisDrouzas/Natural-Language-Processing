@@ -1,9 +1,9 @@
 from unittest import TestCase
+
 from nltk import TweetTokenizer
-import os 
 
 from src.conditional_ngram_models import BigramSpellCorrector, TrigramSpellCorrector
-from src.ngram_models import BigramModel, START_TOKEN, END_TOKEN, TrigramModel
+from src.ngram_models import BigramModel, START_TOKEN, TrigramModel
 
 # test bigram spell corrector
 test_corpus = ["he plays football",
@@ -40,12 +40,12 @@ class TestBigramSpellCorrector(TestCase):
         print(candidates)
 
     def test_spell_correct_unknown_sent(self):
-        correction1 = self.model.spell_correct(tokenized[0], 5, 2)
+        correction1 = self.model.spell_correct(tokenized[0], 2)
         self.assertIsNotNone(correction1)
         self.assertGreater(len(correction1), 0)
         print(f"Original: {tokenized[0]} \nModel: {correction1}")
 
-        correction2 = self.model.spell_correct(tokenized[5], 5, 2)
+        correction2 = self.model.spell_correct(tokenized[5], 2)
         self.assertIsNotNone(correction2)
         self.assertGreater(len(correction2), 0)
         print(f"Original: {tokenized[5]} \nModel: {correction2}")
@@ -54,7 +54,7 @@ class TestBigramSpellCorrector(TestCase):
 
     def test_spell_correct_typo(self):
         false_sent = "he prays god ftball"
-        correction = self.model.spell_correct(tweet_wt.tokenize(false_sent), 5, 2)
+        correction = self.model.spell_correct(tweet_wt.tokenize(false_sent), 2)
         self.assertIsNotNone(correction)
         self.assertGreater(len(correction), 0)
         print(f"Original: {false_sent} \nModel: {correction}")
@@ -82,14 +82,14 @@ class TestTrigramSpellCorrector(TestCase):
         print(candidates)
 
     def test_spell_correct_unknown_sent(self):
-        correction = self.model.spell_correct(tokenized[0], 5, 2)
+        correction = self.model.spell_correct(tokenized[0], 2)
         self.assertIsNotNone(correction)
         self.assertGreater(len(correction), 0)
         print(f"Original: {tokenized[0]} \nModel: {correction}")
 
     def test_spell_correct_typo(self):
         false_sent = "he prays god ftball"
-        correction = self.model.spell_correct(tweet_wt.tokenize(false_sent), 5, 2)
+        correction = self.model.spell_correct(tweet_wt.tokenize(false_sent), 2)
         self.assertIsNotNone(correction)
         self.assertGreater(len(correction), 0)
         print(f"Original: {false_sent} \nModel: {correction}")

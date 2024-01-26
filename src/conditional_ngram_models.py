@@ -4,7 +4,7 @@ from typing import Callable
 
 import Levenshtein
 
-from src.ngram_models import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel
+from src.ngram_models import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel, END_TOKEN
 from src.beam_search import SentenceBeamSearchDecoder
 
 
@@ -46,21 +46,19 @@ class BaseSpellCorrector:
         """
         pass
 
-    def spell_correct(self, original_tokenized_sentence: list[str], max_depth: int, beam_width: int) -> list[str]:
+    def spell_correct(self, original_tokenized_sentence: list[str], beam_width: int) -> list[str]:
         """
         Perform spell correction using beam search.
         :param original_tokenized_sentence: The original sentence as a list of strings.
-        :param max_depth: Maximum depth for beam search.
         :param beam_width: Width of the beam for beam search.
         :return: The corrected sentence as a list of strings.
         """
         def candidate_fn(state): return self.generate_candidates(state)
 
-        def score_fn(candidate_sentence): return self.evaluate(
-            self.language_model.format_input(original_tokenized_sentence),
-            candidate_sentence)
+        def score_fn(candidate_sentence): return self.evaluate(formatted_sentence, candidate_sentence)
 
-        decoder = SentenceBeamSearchDecoder(max_depth, beam_width, candidate_fn, score_fn)
+        formatted_sentence = self.language_model.format_input(original_tokenized_sentence) + [END_TOKEN]
+        decoder = SentenceBeamSearchDecoder(len(formatted_sentence), beam_width, candidate_fn, score_fn)
         return decoder.search(self._initial_search_state(), 0.)
 
     def evaluate(self, original_tokenized_sentence: list[str], target_tokenized_sentence: list[str]) -> float:
@@ -75,7 +73,7 @@ class BaseSpellCorrector:
         clipped_target_sentence = target_tokenized_sentence[:clipped_length]
 
         lm_score = self.language_model.sentence_proba(clipped_target_sentence)
-        edit_score = sum([-math.log2(self.conditional_model(original_word, other_word) + 1)
+        edit_score = -sum([math.log2(self.conditional_model(original_word, other_word) + 1)
                           for original_word, other_word in zip(clipped_original_sentence, clipped_target_sentence)])
 
         return self.lamda1 * lm_score + self.lamda2 * edit_score
