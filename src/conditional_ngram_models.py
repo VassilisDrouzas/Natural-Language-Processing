@@ -4,7 +4,7 @@ from typing import Callable
 
 import Levenshtein
 
-from src.ngram_models import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel, END_TOKEN
+from src.ngram_models import BigramModel, START_TOKEN, BaseNgramModel, TrigramModel, END_TOKEN, UNKNOWN_TOKEN
 from src.beam_search import SentenceBeamSearchDecoder
 
 
@@ -76,8 +76,20 @@ class BaseSpellCorrector:
         clipped_target_sentence = target_tokenized_sentence[:clipped_length]
 
         lm_score = self.language_model.sentence_proba(clipped_target_sentence)
+
+        # if unknown token, disregard edit distance on this token
+        no_unk_original = []
+        no_unk_target = []
+        for i in range(len(clipped_original_sentence)):
+            curr_original_token = clipped_original_sentence[i]
+            curr_target_token = clipped_target_sentence[i]
+            if curr_original_token != UNKNOWN_TOKEN:
+                no_unk_original.append(curr_original_token)
+                no_unk_target.append(curr_target_token)
+
         edit_score = -sum([math.log2(self.conditional_model(original_word, other_word) + 1)
-                          for original_word, other_word in zip(clipped_original_sentence, clipped_target_sentence)])
+                          for original_word, other_word in zip(no_unk_original, no_unk_target)])
+
 
         return self.lamda1 * lm_score + self.lamda2 * edit_score
 
@@ -110,7 +122,7 @@ class BigramSpellCorrector(BaseSpellCorrector):
         """
         last_word = temp_sentence[-1]
         next_words = [word for ((prev_word, word), occ) in
-                      self.language_model.bigram_counter.items() if prev_word == last_word]
+                      self.language_model.bigram_counter.items() if prev_word == last_word and word != UNKNOWN_TOKEN]
         return [temp_sentence + [next_word] for next_word in next_words]
 
     def _initial_search_state(self) -> list[str]:
@@ -149,8 +161,8 @@ class TrigramSpellCorrector(BaseSpellCorrector):
         """
         last_word = temp_sentence[-1]
         second_last_word = temp_sentence[-2]
-        next_words = [word3 for ((word1, word2, word3), occ) in
-                      self.language_model.trigram_counter.items() if word1 == second_last_word and word2 == last_word]
+        next_words = [word3 for ((word1, word2, word3), occ) in self.language_model.trigram_counter.items()
+                      if word1 == second_last_word and word2 == last_word and word3 != UNKNOWN_TOKEN]
         return [temp_sentence + [next_word] for next_word in next_words]
 
     def _initial_search_state(self) -> list[str]:

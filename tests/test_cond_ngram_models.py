@@ -3,7 +3,7 @@ from unittest import TestCase
 from nltk import TweetTokenizer
 
 from src.conditional_ngram_models import BigramSpellCorrector, TrigramSpellCorrector
-from src.ngram_models import BigramModel, START_TOKEN, TrigramModel
+from src.ngram_models import BigramModel, START_TOKEN, TrigramModel, END_TOKEN
 
 # test bigram spell corrector
 test_corpus = ["he plays football",
@@ -26,8 +26,8 @@ class TestBigramSpellCorrector(TestCase):
         self.model = BigramSpellCorrector(lang_model, 0.5)
 
     def test_evaluate(self):
-        text1 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[3]))
-        text2 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[4]))
+        text1 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[3])) + [END_TOKEN]
+        text2 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[4])) + [END_TOKEN]
 
         eval1 = self.model.evaluate(text1, text1)
         eval2 = self.model.evaluate(text1, text2)
