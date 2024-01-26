@@ -23,7 +23,7 @@ class TestBigramSpellCorrector(TestCase):
     def setUp(self):
         lang_model = BigramModel(alpha=0.01)
         lang_model.fit(tokenized)
-        self.model = BigramSpellCorrector(lang_model, 0.5, 0.5)
+        self.model = BigramSpellCorrector(lang_model, 0.5)
 
     def test_evaluate(self):
         text1 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[3]))
@@ -65,7 +65,7 @@ class TestTrigramSpellCorrector(TestCase):
     def setUp(self):
         lang_model = TrigramModel(alpha=0.01)
         lang_model.fit(tokenized)
-        self.model = TrigramSpellCorrector(lang_model, 0.5, 0.5)
+        self.model = TrigramSpellCorrector(lang_model, 0.5)
 
     def test_evaluate(self):
         text1 = self.model.language_model.format_input(tweet_wt.tokenize(test_corpus[3]))
