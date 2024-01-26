@@ -2,8 +2,8 @@ from unittest import TestCase
 from nltk import TweetTokenizer
 import os 
 
-from src.spell_correction import BigramSpellCorrector, TrigramSpellCorrector
-from src.autocomplete import BigramModel, START_TOKEN, END_TOKEN, TrigramModel
+from src.conditional_ngram_models import BigramSpellCorrector, TrigramSpellCorrector
+from src.ngram_models import BigramModel, START_TOKEN, END_TOKEN, TrigramModel
 
 # test bigram spell corrector
 test_corpus = ["he plays football",

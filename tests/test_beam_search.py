@@ -1,7 +1,7 @@
 # test example by Foivos Anagnostou
 from unittest import TestCase
 
-from src.autocomplete import START_TOKEN
+from src.ngram_models import START_TOKEN
 from src.beam_search import SentenceBeamSearchDecoder
 
 
