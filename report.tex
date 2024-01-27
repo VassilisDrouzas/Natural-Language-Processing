@@ -8,9 +8,10 @@
 \usepackage{biblatex}[sorting=nty] % sort alphabetically
 \usepackage[table]{xcolor}
 \usepackage{mathptmx} % Times New Roman
-\usepackage{makecell}
 \usepackage{setspace}
 \usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \pagenumbering{arabic}
 \onehalfspacing % Set line spacing to 1.5
@@ -84,6 +85,55 @@
 	
 	
 	\section{Language Modeling}
+	
+	\subsection{Defining the models}
+	
+	Two models were primarily used in the language modeling task, those being the Bi-gram and Tri-gram models. We also include a Linear Interpolation model using the former models for the sake of comparison. The source code for the models can be found at \texttt{src/ngram\_models.py}.
+	
+	During fitting, the models simply memorize the different uni-grams and bi-grams, or bi-grams and tri-grams for the bi-gram and tri-gram models respectively, and their occurrences in the training corpus. 
+	
+	During inference, the models predict the next token based on the algorithm shown in Algorithm \ref{al::next_token}, where \texttt{candidates(sentence)} and \texttt{ngram\_probability(sentence, word)} are defined according to the model. 
+	
+	The \texttt{is not UNK} condition makes it impossible to output UNKNOWN tokens without disrupting the distribution of the words as found in the original text (which would have been the case had we, for instance, removed ngrams containing UNK during fitting). Our model thus essentially selects the next best option when UNK would mathematically be the best guess.
+	
+	\begin{algorithm}
+		\caption{N-Gram model next-token prediction} 
+		\label{al::next_token}
+		
+		\hspace*{\algorithmicindent} \textbf{Input} sentence: a list of strings\\
+		\hspace*{\algorithmicindent} \textbf{Output} max\_token: the most probable string
+		\begin{algorithmic}[1]
+			
+			\State max\_prob = $-\infty$
+			
+			\For {token in candidates(sentence)}
+			
+				\If{token is not UNK}
+					\State prob = ngram\_probability(sentence, word)
+					
+					\If{prob \textgreater  max\_prob}
+						\State max\_prob = prob
+						\State max\_token = token
+					\EndIf
+				
+				\EndIf
+			
+			\EndFor
+			
+			\State \Return max\_token
+		\end{algorithmic} 
+	\end{algorithm}
+	
+	
+	Meta tags such as \textless START \textgreater  and \textless END \textgreater  are appropriately automatically inserted depending on the model. The tri-gram model uses the same tag for its two starting tokens, because of restrictions of the \texttt{nltk} library which is used to produce ngrams. Because of this decision, during the probability estimation we ignore $P(word1 | <start>, <start> )$.
+	
+	
+	
+	
+	
+	
+	
+	\subsection{Comparing the language models}
 	
 	To find the cross-entropy and perplexity, we used the models defined in the .py files with the simple formulas of cross entropy and perplexity in the corresponding functions. 
 	
