@@ -27,7 +27,7 @@ class SentenceBeamSearchDecoder:
             candidates = new_candidates[:self.beam_width]
 
         if len(candidates) == 0:
-            raise ValueError(f"Can not build sentence: No suitable words found for word '{candidate}''.")
+            raise ValueError(f"Can not build sentence: No suitable next words found for sentence '{candidate}''.")
 
         best_sequence, best_prob = max(candidates, key=lambda x: x[1])
         return best_sequence

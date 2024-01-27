@@ -60,9 +60,11 @@ class BaseSpellCorrector:
 
         def score_fn(candidate_sentence): return self.evaluate(formatted_sentence, candidate_sentence)
 
+        words_to_be_guessed = len(original_tokenized_sentence) + 1
         formatted_sentence = self.language_model.format_input(original_tokenized_sentence) + [END_TOKEN]
-        decoder = SentenceBeamSearchDecoder(len(formatted_sentence), beam_width, candidate_fn, score_fn)
+        decoder = SentenceBeamSearchDecoder(words_to_be_guessed, beam_width, candidate_fn, score_fn)
         response = decoder.search(self._initial_search_state(), 0.)
+        # remove meta tokens
         return [token for token in response if token != START_TOKEN and token != END_TOKEN]
 
     def evaluate(self, original_tokenized_sentence: list[str], target_tokenized_sentence: list[str]) -> float:
