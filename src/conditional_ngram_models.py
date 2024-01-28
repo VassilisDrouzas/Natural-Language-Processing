@@ -56,6 +56,7 @@ class BaseSpellCorrector:
         :param beam_width: Width of the beam for beam search.
         :return: The corrected sentence as a list of strings.
         """
+
         def candidate_fn(state): return self.generate_candidates(state)
 
         def score_fn(candidate_sentence): return self.evaluate(formatted_sentence, candidate_sentence)
@@ -72,7 +73,7 @@ class BaseSpellCorrector:
         Evaluate the candidate correction based on language model score and edit distance.
         :param original_tokenized_sentence: The original sentence as a list of strings.
         :param target_tokenized_sentence: The candidate correction as a list of strings.
-        :return: The log-probability of the sentence given the target sentence.
+        :return: The log-probability of the sentence given the original sentence.
         """
         clipped_length = min(len(original_tokenized_sentence), len(target_tokenized_sentence))
         clipped_original_sentence = original_tokenized_sentence[:clipped_length]
@@ -86,13 +87,13 @@ class BaseSpellCorrector:
         for i in range(len(clipped_original_sentence)):
             curr_original_token = clipped_original_sentence[i]
             curr_target_token = clipped_target_sentence[i]
+
             if curr_original_token != UNKNOWN_TOKEN:
                 no_unk_original.append(curr_original_token)
                 no_unk_target.append(curr_target_token)
 
         edit_score = -sum([math.log2(self.conditional_model(original_word, other_word) + 1)
-                          for original_word, other_word in zip(no_unk_original, no_unk_target)])
-
+                           for original_word, other_word in zip(no_unk_original, no_unk_target)])
 
         return self.lamda1 * lm_score + self.lamda2 * edit_score
 
@@ -114,7 +115,8 @@ class BigramSpellCorrector(BaseSpellCorrector):
         """
         super().__init__(language_model, lamda, conditional_model)
 
-        if not isinstance(language_model, BigramModel):                                                            #had to comment out otherwise it would raise the error on my notebook
+        if not isinstance(language_model,
+                          BigramModel):  # had to comment out otherwise it would raise the error on my notebook
             raise ValueError("The Bigram spell corrector needs a bigram model to function properly.")
 
     def generate_candidates(self, temp_sentence: list[str]) -> list[list[str]]:
@@ -125,7 +127,8 @@ class BigramSpellCorrector(BaseSpellCorrector):
         """
         last_word = temp_sentence[-1]
         next_words = [word for ((prev_word, word), occ) in
-                      self.language_model.bigram_counter.items() if prev_word == last_word and word != UNKNOWN_TOKEN]
+                      self.language_model.bigram_counter.items() if prev_word == last_word
+                      and word not in [START_TOKEN, END_TOKEN, UNKNOWN_TOKEN]]
         return [temp_sentence + [next_word] for next_word in next_words]
 
     def _initial_search_state(self) -> list[str]:
@@ -164,8 +167,11 @@ class TrigramSpellCorrector(BaseSpellCorrector):
         """
         last_word = temp_sentence[-1]
         second_last_word = temp_sentence[-2]
-        next_words = [word3 for ((word1, word2, word3), occ) in self.language_model.trigram_counter.items()
-                      if word1 == second_last_word and word2 == last_word and word3 != UNKNOWN_TOKEN]
+        next_words = [word3 for ((word1, word2, word3), occ)
+                      in self.language_model.trigram_counter.items()
+                      if word1 == second_last_word
+                      and word2 == last_word
+                      and word3 not in [START_TOKEN, END_TOKEN, UNKNOWN_TOKEN]]
         return [temp_sentence + [next_word] for next_word in next_words]
 
     def _initial_search_state(self) -> list[str]:
