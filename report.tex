@@ -14,7 +14,7 @@
 \usepackage{mathtools}
 
 \pagenumbering{arabic}
-\graphicspath{ {./resources/} }
+\graphicspath{ {./output/}{./images/} }
 \addbibresource{refs.bib}
 
 \def\code#1{\texttt{#1}}
@@ -74,31 +74,23 @@
 	
 	To find the vocabulary, we simply iterated the word counter and added all the words that were not OOV. To make sure we did not include duplicates, we converted the vocabulary to a set.
 	
-	The same process was applied for the development and test sets, except that now we kept the same vocabulary. We updated the sentences with the \texttt{‘UNK’} value when necessary. Finally, we calculated the 20 most frequent words of unigrams, bigrams and trigrams and the vocabulary length, which can be found in Figure 1 and in the notebook.
-
- \begin{figure}[H]
-    \centering
-    \includegraphics[width=6cm]{"common_words1".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
- \begin{figure}[H]
-    \centering
-    \includegraphics[width=6cm]{"common_words2".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
-
-\begin{centering}
-
-
-
-\renewcommand{\caption}{Figure 1: }
-\caption{The most common words for the unigram, bigram and trigram models.}
-
-\end{centering}
+	The same process was applied for the development and test sets, except that now we kept the same vocabulary. We updated the sentences with the \texttt{‘UNK’} value when necessary. Finally, we calculated the 20 most frequent words of unigrams, bigrams and trigrams and the vocabulary length, which can be found in Figures \ref{fig::common_words_1}, \ref{fig::common_words_2} and in the notebook.
+	
+	%TODO: Combine these pictures into one and place them side-by-side so they fit better
+	 \begin{figure}
+	    \centering
+	    \includegraphics[width=6cm]{"common_words1".png}
+	    \caption{Most common uni-grams and bi-grams in the training corpus.}
+	    \label{fig::common_words_1}
+	\end{figure}
+	
+	 \begin{figure}
+	    \centering
+	    \includegraphics[width=6cm]{"common_words2".png}
+		\caption{Most common tri-grams in the training corpus.}
+	    \label{fig::common_words_2}
+	\end{figure}
+	
 	
 	\subsection{Corrupted Dataset}
 	
@@ -106,23 +98,15 @@
 	
 	Thus, we created a function \texttt{get\_similar\_char()} to define replacements from original characters. For example, a would be replaced by e, c would be replaced by s etc. This function returns a randomly chosen character from those defined.
 	
-	The function was subsequently used by \texttt{corrupt\_sentence()}, which takes as input a sentence and returns a new corrupted one with a probability for every character of 0.1 (user-defined parameter). Below we give an example:
+	The function was subsequently used by \texttt{corrupt\_sentence()}, which takes as input a sentence and returns a new corrupted one with a probability for every character of 0.1 (user-defined parameter). An example can be found in Figure \ref{fig::corruption}.
  
-  \begin{figure}[H]
-    \centering
-    \includegraphics[width=15cm]{"corrupted".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
- \begin{centering}
-
-
-
-\renewcommand{\caption}{Figure 2: }
-\caption{Testing the sentence corruption.}
-
-\end{centering}
+	\begin{figure}
+	    \centering
+	    \includegraphics[width=15cm]{"corrupted".png}
+	    \caption{An example of a "corrupted" sentence compared to its original.}
+    \label{fig::corruption}
+	\end{figure}
+		
 	
 	\section{Language Modeling}
 	
@@ -194,117 +178,87 @@
 	\end{algorithm}
 	
 	
-	Meta tags such as \textless START \textgreater  and \textless END \textgreater  are appropriately automatically inserted depending on the model. The tri-gram model uses the same tag for its two starting tokens, because of restrictions of the \texttt{nltk} library which is used to produce ngrams. Because of this decision, during the probability estimation we ignore $P(word1 | <start>, <start> )$.
-	
-	
-	
-	
-	
+	Meta tags such as \textless START \textgreater  and \textless END \textgreater  are appropriately automatically inserted depending on the model. The tri-gram model uses the same tag for its two starting tokens, because of restrictions of the \texttt{nltk} library which is used to produce ngrams. Because of this decision, during the probability estimation we ignore $P(word1 | <start>, <start>)$.
 	
 	
 	\subsection{Comparing the language models}
 	
 	To find the cross-entropy and perplexity, we used the models defined in the .py files with the simple formulas of cross entropy and perplexity in the corresponding functions. 
 	
-	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In ngram\_model\_alpha\_search() we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-10}, 1]$.
+	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In \texttt{ngram\_model\_alpha\_search()} we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-15}, 1]$. The change in entropy depending on the $\alpha$ smoothing hyperparameter can be seen in Figures \ref{fig::bi_alpha_entropy}, \ref{fig::tri_alpha_entropy}, \ref{fig::li_alpha_entropy}. Note how despite 
+	
 
- \begin{figure}[H]
-    \centering
-    \includegraphics[width=11cm]{"alpha_entropy".png}
-    
-    \label{fig:galaxy}
-\end{figure}
+	 \begin{figure}
+	    \centering
+	    \includegraphics[width=6cm]{"bi_alpha.png"}
+	    \caption{Cross Entropy of the bi-gram language model depending on the values of the $\alpha$ smoothing hyperparameter.}
+	    \label{fig::bi_alpha_entropy}
+	\end{figure}
 
-
-\begin{centering}
-
-
-
-\renewcommand{\caption}{Figure 3: }
-\caption{Finding the best alpha (bigram model).}
-
-\end{centering} 
-
-\
-
-\
-
-The cross-entropy and perplexity scores of the two models can be found below:
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=6cm]{"scores_bigram".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=6cm]{"scores_trigram".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
-\begin{centering}
+	\begin{figure}
+		\centering
+		\includegraphics[width=6cm]{"tri_alpha.png"}
+		\caption{Cross Entropy of the trigram language model depending on the values of the $\alpha$ smoothing hyperparameter.}
+		\label{fig::tri_alpha_entropy}
+	\end{figure}
+	
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=6cm]{"interpolation_alpha.png"}
+		\caption{Cross Entropy of the linear interpolation language model depending on the values of the $\alpha$ smoothing hyperparameter.}
+		\label{fig::li_alpha_entropy}
+	\end{figure}
 
 
+	The cross-entropy and perplexity scores of the two models can be found in Figures \ref{fig::scores_bigram}, \ref{fig::scores_trigram}.
 
-\renewcommand{\caption}{Figure 4: }
-\caption{Cross entropy and perplexity scores for bigram and trigram models.}
+	\begin{figure}
+	    \centering
+	    \includegraphics[width=6cm]{"scores_bigram".png}
+	    \caption{Cross entropy and perplexity scores for the bigram model.}
+	    \label{fig::scores_bigram}
+	\end{figure}
+	
+	\begin{figure}
+	    \centering
+	    \includegraphics[width=6cm]{"scores_trigram".png}
+	    \caption{Cross entropy and perplexity scores for the trigram model.}
+	    \label{fig::scores_trigram}
+	\end{figure}
 
-\end{centering} 
-	\newpage
+
+	
 	\section{Spell Checking}
+	
+	
 	Regarding the spell correction, we cite an example of our bi-gram model corrector:
-
- \begin{figure}[H]
-    \centering
-    \includegraphics[width=15cm]{"bigram_evaluation".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
-
-\begin{centering}
-
-
-
-\renewcommand{\caption}{Figure 5: }
-\caption{Testing the spell corrector (bi-gram model).}
-
-\end{centering} 
-
-\ 
-
-\
-
+	
+	 \begin{figure}
+	    \centering
+	    \includegraphics[width=15cm]{"bigram_evaluation".png}
+	    \label{fig:galaxy}
+	    \caption{Testing the spell corrector (bi-gram model).}
+	\end{figure}
  
-	In order to obtain the WER and CER scores of a sentence, we imported the \texttt{jiwer} package, from which we used the \texttt{wer()} and \texttt{cer()} functions to calculate the corresponding scores. Then, we just took the average of these scores. The final results can be found below.
-
- \begin{figure}[H]
-    \centering
-    \includegraphics[width=11cm]{"cer_bigram".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
-
- \begin{figure}[H]
-    \centering
-    \includegraphics[width=12cm]{"cer_trigram".png}
-    
-    \label{fig:galaxy}
-\end{figure}
-
-
-\begin{centering}
-
-
-
-\renewcommand{\caption}{Figure 6: }
-\caption{WER and CER scores for the two models.}
-
-\end{centering} 
+	In order to obtain the WER and CER scores of a sentence, we imported the \texttt{jiwer} package, from which we used the \texttt{wer()} and \texttt{cer()} functions to calculate the corresponding scores. Then, we just took the average of these scores. The final results can be found in Figures \ref{fig::cer_bigram}, \ref{fig::cer_bigram}.
+	
+	%TODO: Add brief explanation of results
+	
+	 \begin{figure}
+	    \centering
+	    \includegraphics[width=11cm]{"cer_bigram".png}
+	    \caption{WER and CER scores for the bi-gram spell checking model.}
+	    \label{fig::cer_bigram}
+	\end{figure}
+	
+	
+	 \begin{figure}
+	    \centering
+	    \includegraphics[width=12cm]{"cer_trigram".png}
+	    \caption{WER and CER scores for the tri-gram spell checking model.}
+	    \label{fig::cer_trigram}
+	\end{figure}
 	
 	
 \end{document}
