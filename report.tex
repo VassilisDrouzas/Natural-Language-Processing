@@ -21,7 +21,7 @@
 
 \title{\Huge Text Analytics: 1st Assignment}
 
-\author{\LARGE Tsirmpas Dimitris\\\LARGE Droutzas Vassilis}
+\author{\LARGE Tsirmpas Dimitris\\\LARGE Drouzas Vasilis}
 
 
 \begin{document}
@@ -45,7 +45,10 @@
 	
 	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of bi-gram and tri-gram models.
 	
+ 
 	The full code can be found at \url{https://github.com/dimits-exe/text_analytics}. Note that the notebook does not contain the models, which are imported from python source code files in the \texttt{src} directory.
+
+    In terms of how we collaborated, Dimitris Tsirmpas constructed the models and their corresponding functions (e.g. auto-complete, the spelling corrector) while Vasilis Drouzas handled data preprocessing (e.g. OOV words) and the evaluation of the models (creating an artificial dataset, calculating CER/WER scores). Both authors collaborated in the process of the models' scores (cross entropy, perplexity). 
 	
 	\section{Datasets}
 	
@@ -71,8 +74,31 @@
 	
 	To find the vocabulary, we simply iterated the word counter and added all the words that were not OOV. To make sure we did not include duplicates, we converted the vocabulary to a set.
 	
-	The same process was applied for the development and test sets, except that now we kept the same vocabulary. We updated the sentences with the \texttt{‘UNK’} value when necessary. Finally, we calculated the 20 most frequent words of unigrams, bigrams and trigrams and the vocabulary length, which can be found in the notebook.
-	
+	The same process was applied for the development and test sets, except that now we kept the same vocabulary. We updated the sentences with the \texttt{‘UNK’} value when necessary. Finally, we calculated the 20 most frequent words of unigrams, bigrams and trigrams and the vocabulary length, which can be found in Figure 1 and in the notebook.
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{"common_words1".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{"common_words2".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+
+\begin{centering}
+
+
+
+\renewcommand{\caption}{Figure 1: }
+\caption{The most common words for the unigram, bigram and trigram models.}
+
+\end{centering}
 	
 	\subsection{Corrupted Dataset}
 	
@@ -80,8 +106,23 @@
 	
 	Thus, we created a function \texttt{get\_similar\_char()} to define replacements from original characters. For example, a would be replaced by e, c would be replaced by s etc. This function returns a randomly chosen character from those defined.
 	
-	The function was subsequently used by \texttt{corrupt\_sentence()}, which takes as input a sentence and returns a new corrupted one with a probability for every character of 0.1 (user-defined parameter). 
-	
+	The function was subsequently used by \texttt{corrupt\_sentence()}, which takes as input a sentence and returns a new corrupted one with a probability for every character of 0.1 (user-defined parameter). Below we give an example:
+ 
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{"corrupted".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+ \begin{centering}
+
+
+
+\renewcommand{\caption}{Figure 2: }
+\caption{Testing the sentence corruption.}
+
+\end{centering}
 	
 	\section{Language Modeling}
 	
@@ -123,6 +164,7 @@
 	\end{equation}
 	
 	
+	
 	\begin{algorithm}
 		\caption{N-Gram model next-token prediction} 
 		\label{al::next_token}
@@ -160,16 +202,86 @@
 	
 	
 	
-	\subsection{Comparing the models}
+	\subsection{Comparing the language models}
 	
 	To find the cross-entropy and perplexity, we used the models defined in the .py files with the simple formulas of cross entropy and perplexity in the corresponding functions. 
 	
 	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In ngram\_model\_alpha\_search() we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-10}, 1]$.
-	
-	
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=11cm]{"alpha_entropy".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+
+\begin{centering}
+
+
+
+\renewcommand{\caption}{Figure 3: }
+\caption{Finding the best alpha (bigram model).}
+
+\end{centering} 
+
+\
+
+\
+
+The cross-entropy and perplexity scores of the two models can be found below:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{"scores_bigram".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{"scores_trigram".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+\begin{centering}
+
+
+
+\renewcommand{\caption}{Figure 4: }
+\caption{Cross entropy and perplexity scores for bigram and trigram models.}
+
+\end{centering} 
+	\newpage
 	\section{Spell Checking}
 	
-	In order to obtain the WER and CER scores of a sentence, we imported the \texttt{jiwer} package, from which we used the \texttt{wer()} and \texttt{cer()} functions to calculate the corresponding scores. Then, we just took the average of these scores.
+	In order to obtain the WER and CER scores of a sentence, we imported the \texttt{jiwer} package, from which we used the \texttt{wer()} and \texttt{cer()} functions to calculate the corresponding scores. Then, we just took the average of these scores. The final results can be found below.
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=11cm]{"cer_bigram".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{"cer_trigram".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+
+\begin{centering}
+
+
+
+\renewcommand{\caption}{Figure 4: }
+\caption{WER and CER scores for the two models.}
+
+\end{centering} 
 	
 	
 \end{document}
