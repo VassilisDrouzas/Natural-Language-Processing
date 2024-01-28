@@ -134,7 +134,7 @@
 	\begin{equation}
 		\label{eq::bigram_sentence_probs}
 		\begin{aligned}
-			& P(w^{k+1}_1) > P(w^{k+1}_1) \iff \\
+			& P(w^{k}_1 | t^k+1) > P(w^{k+1}_1 | t^k+1) \iff \\
 			& log(P(w_1|<start>)) + log(P(w_2|w_1)) + \cdots + log(P(t_1|w_k)) > \\
 			& log(P(w_1|<start>)) + log(P(w_2|w_1)) + \cdots + log(P(t_2|w_k)) \iff \\
 			& log(P(t_1|w_k)) > log(P(t_2|w_k))
@@ -144,7 +144,7 @@
 	\begin{equation}
 		\label{eq::trigram_sentence_probs}
 		\begin{aligned}
-			& P(w^{k+1}_1) > P(w^{k+1}_1) \iff \\
+			&  P(w^{k}_1 | t^k+1) > P(w^{k+1}_1 | t^k+1) \iff \\
 			& log(P(w_1|<start>, <start>)) + log(P(w_2|w_1, <start>)) + \cdots + log(P(t_1|w_k, w_{k-1})) > \\ 
 			& log(P(w_1|<start>, <start>)) + log(P(w_2|w_1, <start>)) + \cdots + log(P(t_2|w_k, w_{k-1})) \iff \\
 			& log(P(t_1|w_k, w_{k-1})) > log(P(t_2|w_k, w_{k-1}))
@@ -237,6 +237,17 @@
 	
 	\section{Spell Checking}
 	
+	
+	\subsection{Defining the models}
+	
+	In order to design models capable of correcting spelling mistakes we need to adapt our previous language models to factor in the user-provided (and likely incorrectly spelled) sentence. Thus, we make the assumption that the generated sentence must have a length equal to the user-provided one. As a logical consequence, the model can never predict meta tokens (no START tokens by design, UNKNOWN tokens for the reasons detailed in the previous section, and no END tokens since the predicted sentence's size is known and constant).
+	
+	We use Beam Search (defined in the file \texttt{src/beam\_search.py}) to construct the best candidate sentence. This is a generalization of Algorithm \ref{al::next_token}, where for each new token, we take into consideration the $k$ most probable tokens, where $k$ the beam search width hyper-parameter. Large values of $k$ lead to increased computational complexity but also more reliable results.
+	
+	We define two models, one bi-gram and one tri-gram spell checking model, which internally use the respective language models defined in the section above. The \texttt{candidates(sentence)} are delegated to said internal models, while the \texttt{ngram\_probability(sentence, word)} function is defined as $P(w^{k}_1) =log(P(t^k_1)) + log(P(w^{k}_1 | t^k_1))$ where $P(t^k_1)$ is defined as in the language models and $ P(w^{k}_1 | t^k_1) = \sum^n_i \upsilon_i \frac{1}{Lev(w_i, t_i) + 1}$, where $n$ is the current search depth, $\upsilon_i = 0$ if the $i$-th word is the unknown token and 1 otherwise, and $Lev(w_i, k_i)$ is the levenshtein distance between the original word $w_i$ and the candidate token $t_i$. Thus UNKNOWN tokens are only handled by the language models, with no input from the distance score function.
+
+	
+	\subsection{Comparing the language models}
 	
 	Regarding the spell correction, we cite an example of our bi-gram model corrector in Figure \ref{fig::spell_check_example}.
 	
