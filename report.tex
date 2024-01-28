@@ -8,13 +8,12 @@
 \usepackage{biblatex}[sorting=nty] % sort alphabetically
 \usepackage[table]{xcolor}
 \usepackage{mathptmx} % Times New Roman
-\usepackage{setspace}
 \usepackage{geometry}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{mathtools}
 
 \pagenumbering{arabic}
-\onehalfspacing % Set line spacing to 1.5
 \graphicspath{ {./resources/} }
 \addbibresource{refs.bib}
 
@@ -96,6 +95,34 @@
 	
 	The \texttt{is not UNK} condition makes it impossible to output UNKNOWN tokens without disrupting the distribution of the words as found in the original text (which would have been the case had we, for instance, removed ngrams containing UNK during fitting). Our model thus essentially selects the next best option when UNK would mathematically be the best guess.
 	
+	The \texttt{candidates(sentence)} function is a look-up of the last or the two last words in the sentences in the model's respective bi-grams and tri-grams.
+	
+	The \texttt{ngram\_probability(sentence, word)} function for the bi-gram model would be $ P(w_2|w_1) = \frac{C(w_1,w_2) + \alpha}{C(w_1) + \alpha \cdot|V|} $, where  $w1$ is the last word of the sentence, $w2$ is the word under consideration, $ C(w_1,w_2) $ is the bigram count, $ C(w_1) $ is the unigram count, $ 0 \leq\alpha \leq1 $ is the smoothing hyper-parameter and |V| the vocabulary size.
+	
+	Similarly, the \texttt{ngram\_probability(sentence, word)} function for the tri-gram model would be $ P(w_3|w_1,w_2) = \frac{C(w_1,w_2,w_3) + \alpha}{C(w_1,w_2) + \alpha \cdot |V|} $ where  $w1 and w2$ the last words of the sentence, $w3$ the word under consideration, $ C(w_1,w_2,w_3) $ the trigram count, $ C(w_1,w_2) $ is the bigram count, $ 0 \leq\alpha \leq1 $ is the smoothing hyper-parameter and |V| the vocabulary size.
+	
+	The reason we only need to calculate the last ngram in order to predict the next token is simple. Let $t_1$, $t_2$ be the tokens under consideration and $w_1 \cdots w_k$ the words of the sentence thus far. For $t_1$ to be selected over $t_2$ the total probability of the sentence which includes $t_1$ must exceed the one which includes $t_2$. For the bigram model, this is expressed as in Equation \ref{eq::bigram_sentence_probs}. Similarly, the trigram model case is explored in Equation \ref{eq::trigram_sentence_probs}. 
+	
+	\begin{equation}
+		\label{eq::bigram_sentence_probs}
+		\begin{aligned}
+			& P(w^{k+1}_1) > P(w^{k+1}_1) \iff \\
+			& P(w_1|<start>) P(w_2|w_1) \cdots P(t_1|w_k) > \\
+			& P(w_1|<start>) P(w_2|w_1) \cdots P(t_2|w_k) \iff \\
+			& P(t_1|w_k) > P(t_2|w_k)
+		\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+		\label{eq::trigram_sentence_probs}
+		\begin{aligned}
+			& P(w^{k+1}_1) > P(w^{k+1}_1) \iff \\
+			& P(w_1|<start>, <start>) P(w_2|w_1, <start>) \cdots P(t_1|w_k, w_{k-1}) > \\ & P(w_1|<start>, <start>) P(w_2|w_1, <start>) \cdots P(t_2|w_k, w_{k-1})) \iff \\
+			& P(t_1|w_k, w_{k-1}) > P(t_2|w_k, w_{k-1}))
+		\end{aligned}
+	\end{equation}
+	
+	
 	\begin{algorithm}
 		\caption{N-Gram model next-token prediction} 
 		\label{al::next_token}
@@ -133,7 +160,7 @@
 	
 	
 	
-	\subsection{Comparing the language models}
+	\subsection{Comparing the models}
 	
 	To find the cross-entropy and perplexity, we used the models defined in the .py files with the simple formulas of cross entropy and perplexity in the corresponding functions. 
 	
