@@ -135,9 +135,9 @@
 		\label{eq::bigram_sentence_probs}
 		\begin{aligned}
 			& P(w^{k+1}_1) > P(w^{k+1}_1) \iff \\
-			& P(w_1|<start>) P(w_2|w_1) \cdots P(t_1|w_k) > \\
-			& P(w_1|<start>) P(w_2|w_1) \cdots P(t_2|w_k) \iff \\
-			& P(t_1|w_k) > P(t_2|w_k)
+			& log(P(w_1|<start>)) + log(P(w_2|w_1)) + \cdots + log(P(t_1|w_k)) > \\
+			& log(P(w_1|<start>)) + log(P(w_2|w_1)) + \cdots + log(P(t_2|w_k)) \iff \\
+			& log(P(t_1|w_k)) > log(P(t_2|w_k))
 		\end{aligned}
 	\end{equation}
 	
@@ -145,8 +145,9 @@
 		\label{eq::trigram_sentence_probs}
 		\begin{aligned}
 			& P(w^{k+1}_1) > P(w^{k+1}_1) \iff \\
-			& P(w_1|<start>, <start>) P(w_2|w_1, <start>) \cdots P(t_1|w_k, w_{k-1}) > \\ & P(w_1|<start>, <start>) P(w_2|w_1, <start>) \cdots P(t_2|w_k, w_{k-1})) \iff \\
-			& P(t_1|w_k, w_{k-1}) > P(t_2|w_k, w_{k-1}))
+			& log(P(w_1|<start>, <start>)) + log(P(w_2|w_1, <start>)) + \cdots + log(P(t_1|w_k, w_{k-1})) > \\ 
+			& log(P(w_1|<start>, <start>)) + log(P(w_2|w_1, <start>)) + \cdots + log(P(t_2|w_k, w_{k-1})) \iff \\
+			& log(P(t_1|w_k, w_{k-1})) > log(P(t_2|w_k, w_{k-1}))
 		\end{aligned}
 	\end{equation}
 	
