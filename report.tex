@@ -48,7 +48,7 @@
  
 	The full code can be found at \url{https://github.com/dimits-exe/text_analytics}. Note that the notebook does not contain the models, which are imported from python source code files in the \texttt{src} directory.
 
-    In terms of how we collaborated, Dimitris Tsirmpas constructed the models and their corresponding functions (e.g. auto-complete, the spelling corrector) while Vasilis Drouzas handled data preprocessing (e.g. OOV words) and the evaluation of the models (creating an artificial dataset, calculating CER/WER scores). Both authors collaborated in the process of the models' scores (cross entropy, perplexity). 
+    In terms of how we collaborated, Dimitris Tsirmpas constructed the models and their corresponding functions (e.g. auto-complete, the spelling corrector) while Vasilis Drouzas handled data preprocessing (e.g. OOV words) and the evaluation of the models (creating an artificial dataset, calculating CER/WER scores). Both authors collaborated in the process of demonstrating the models' scores (cross entropy, perplexity). 
 	
 	\section{Datasets}
 	
@@ -255,7 +255,30 @@ The cross-entropy and perplexity scores of the two models can be found below:
 \end{centering} 
 	\newpage
 	\section{Spell Checking}
-	
+	Regarding the spell correction, we cite an example of our bi-gram model corrector:
+
+ \begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{"bigram_evaluation".png}
+    
+    \label{fig:galaxy}
+\end{figure}
+
+
+\begin{centering}
+
+
+
+\renewcommand{\caption}{Figure 5: }
+\caption{Testing the spell corrector (bi-gram model).}
+
+\end{centering} 
+
+\ 
+
+\
+
+ 
 	In order to obtain the WER and CER scores of a sentence, we imported the \texttt{jiwer} package, from which we used the \texttt{wer()} and \texttt{cer()} functions to calculate the corresponding scores. Then, we just took the average of these scores. The final results can be found below.
 
  \begin{figure}[H]
@@ -278,7 +301,7 @@ The cross-entropy and perplexity scores of the two models can be found below:
 
 
 
-\renewcommand{\caption}{Figure 4: }
+\renewcommand{\caption}{Figure 6: }
 \caption{WER and CER scores for the two models.}
 
 \end{centering} 
