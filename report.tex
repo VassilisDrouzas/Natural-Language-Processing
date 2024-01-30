@@ -122,11 +122,11 @@
 	
 	The \texttt{candidates(sentence)} function is a look-up of the last or the two last words in the sentences in the model's respective bi-grams and tri-grams.
 	
-	The \texttt{ngram\_probability(sentence, word)} function for the bi-gram model would be $ P(w_2|w_1) = \frac{C(w_1,w_2) + \alpha}{C(w_1) + \alpha \cdot|V|} $, where  $w1$ is the last word of the sentence, $w2$ is the word under consideration, $ C(w_1,w_2) $ is the bigram count, $ C(w_1) $ is the unigram count, $ 0 \leq\alpha \leq1 $ is the smoothing hyper-parameter and |V| the vocabulary size.
+	The \texttt{ngram\_probability(sentence, word)} function for the bi-gram model would be $ P(w_2|w_1) = \frac{C(w_1,w_2) + \alpha}{C(w_1) + \alpha \cdot|V|} $, where  $w1$ is the last word of the sentence, $w2$ is the word under consideration, $ C(w_1,w_2) $ is the bigram count, $ C(w_1) $ is the unigram count, $ 0 \leq\alpha \leq1 $ is the smoothing hyper-parameter and $\lvert V \rvert$ the vocabulary size.
 	
-	Similarly, the \texttt{ngram\_probability(sentence, word)} function for the tri-gram model would be $ P(w_3|w_1,w_2) = \frac{C(w_1,w_2,w_3) + \alpha}{C(w_1,w_2) + \alpha \cdot |V|} $ where  $w1 and w2$ the last words of the sentence, $w3$ the word under consideration, $ C(w_1,w_2,w_3) $ the trigram count, $ C(w_1,w_2) $ is the bigram count, $ 0 \leq\alpha \leq1 $ is the smoothing hyper-parameter and |V| the vocabulary size.
+	Similarly, the \texttt{ngram\_probability(sentence, word)} function for the tri-gram model would be $ P(w_3|w_1,w_2) = \frac{C(w_1,w_2,w_3) + \alpha}{C(w_1,w_2) + \alpha \cdot |V|} $ where  $w1$ and $w2$ the last words of the sentence, $w3$ the word under consideration, $ C(w_1,w_2,w_3) $ the trigram count, $ C(w_1,w_2) $ is the bigram count, $ 0 \leq\alpha \leq1 $ is the smoothing hyper-parameter and $\lvert V \rvert$ the vocabulary size.
 	
-	The reason we only need to calculate the last ngram in order to predict the next token is simple. Let $t_1$, $t_2$ be the tokens under consideration and $w_1 \cdots w_k$ the words of the sentence thus far. For $t_1$ to be selected over $t_2$ the total probability of the sentence which includes $t_1$ must exceed the one which includes $t_2$. For the bigram model, this is expressed as in Equation \ref{eq::bigram_sentence_probs}. Similarly, the trigram model case is explored in Equation \ref{eq::trigram_sentence_probs}. 
+	The reason we only need to calculate the last ngram in order to predict the next token is simple. Let $t_1$, $t_2$ be the tokens under consideration and $w_1 \cdots w_k$ the words of the sentence thus far. For $t_1$ to be selected over $t_2$ the total probability of the sentence which includes $t_1$ must exceed the one which includes $t_2$. For the bigram model, this is expressed as in Equation \ref{eq::bigram_sentence_probs}. Similarly, the trigram case is explored in Equation \ref{eq::trigram_sentence_probs}. 
 	
 	\begin{equation}
 		\label{eq::bigram_sentence_probs}
@@ -186,9 +186,9 @@
 	
 	To find the cross-entropy and perplexity, we used the models defined in the .py files with the simple formulas of cross entropy and perplexity in the corresponding functions. 
 	
-	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In \texttt{ngram\_model\_alpha\_search()} we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-15}, 1]$. 
+	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In \texttt{ngram\_model\_alpha\_search()} we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-15}, 1]$.
 	
-	The change in entropy depending on the $\alpha$ smoothing hyperparameter can be seen in Figures \ref{fig::bi_alpha_entropy}, \ref{fig::tri_alpha_entropy}, \ref{fig::li_alpha_entropy}. The Bi-gram model exhibits high variance depending on different $\alpha$ values, where for a very tight region close to 0 (but not too close) result in catastrophic loss of performance,. The tri-gram and linear interpolation models on the other hand exhibit relative stability, with very small $\alpha$ values being slightly favored.
+	The change in entropy depending on the $\alpha$ smoothing hyperparameter can be seen in Figures \ref{fig::bi_alpha_entropy}, \ref{fig::tri_alpha_entropy}, \ref{fig::li_alpha_entropy}. The Bi-gram model exhibits high variance depending on different $\alpha$ values, where for a very tight region close to 0 (but not too close) results in catastrophic loss of performance. The tri-gram and linear interpolation models on the other hand exhibit relative stability, with very small $\alpha$ values being slightly favored.
 	
 
 	 \begin{figure}
@@ -214,7 +214,7 @@
 	\end{figure}
 
 
-	The cross-entropy and perplexity scores of the two models on the test corpus can be found in Figures \ref{fig::scores_bigram}, \ref{fig::scores_trigram}.
+	The cross-entropy and perplexity scores of the two models on the test corpus can be found in Figures \ref{fig::scores_bigram}, \ref{fig::scores_trigram}. The scores tend to vary greatly depending on the given seed, fluctuating between $40$ and $1,600$ perplexity. This indicates an unstable classifier, which is probably caused by the clashing domains of our two main datasets, as well as relative lack of relevant data which cause our model to overfit.
 
 	\begin{figure}
 	    \centering
@@ -251,15 +251,15 @@
 	 \begin{figure}
 	    \centering
 	    \includegraphics[width=15cm]{"bigram_evaluation".png}
-	    \label{fig::spell_check_example_bigram}
 	    \caption{Testing the spell corrector (bi-gram model).}
+	    \label{fig::spell_check_example_bigram}
 	\end{figure}
 
 	\begin{figure}
 	    \centering
 	    \includegraphics[width=15cm]{"trigram_evaluation".png}
-	    \label{fig::spell_check_example_trigram}
 	    \caption{Testing the spell corrector (tri-gram model).}
+	    \label{fig::spell_check_example_trigram}
 	\end{figure}
 
 
@@ -293,9 +293,6 @@
 	In order to obtain the WER and CER scores of a sentence, we imported the \texttt{jiwer} package, from which we used the \texttt{wer()} and \texttt{cer()} functions to calculate the corresponding scores. Then, we just took the average of these scores. The final results can be found in Figures \ref{fig::cer_bigram}, \ref{fig::cer_trigram}.
 	
 
-     
-
-	
 	 \begin{figure}
 	    \centering
 	    \includegraphics[width=11cm]{"cer_bigram".png}
