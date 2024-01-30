@@ -246,17 +246,24 @@
 	
 	\subsection{Comparing the language models}
 	
-	Regarding the spell correction, we cite an example of our bi-gram model corrector in Figure \ref{fig::spell_check_example}.
+	Regarding the spell correction, we cite an example of our bi-gram and tr-gram model correctors in Figures \ref{fig::spell_check_example_bigram} \& \ref{fig::spell_check_example_trigram}.
 	
 	 \begin{figure}
 	    \centering
 	    \includegraphics[width=15cm]{"bigram_evaluation".png}
-	    \label{fig::spell_check_example}
+	    \label{fig::spell_check_example_bigram}
 	    \caption{Testing the spell corrector (bi-gram model).}
 	\end{figure}
 
+	\begin{figure}
+	    \centering
+	    \includegraphics[width=15cm]{"trigram_evaluation".png}
+	    \label{fig::spell_check_example_trigram}
+	    \caption{Testing the spell corrector (tri-gram model).}
+	\end{figure}
 
-     WER measures the percentage of words that are incorrectly predicted or recognized by a system compared to a reference (ground truth). It is calculated by the formula: 
+
+     Now, let's consider comparing our models using WER and CER scores. WER measures the percentage of words that are incorrectly predicted or recognized by a system compared to a reference (ground truth). It is calculated by the formula: 
       \[  WER = \frac{S + D + I}{N} \times 100 \]
 
     where:
@@ -304,6 +311,6 @@
 	    \label{fig::cer_trigram}
 	\end{figure}
  
-	The trigram model outperforms the bigram model in both WER and CER, indicating that incorporating more context (trigrams instead of bigrams) has led to better language model performance.
+	The trigram model outperforms the bigram model in both WER and CER, indicating that incorporating more context (tri-grams instead of bi-grams) has led to better language model performance.
 	
 \end{document}
