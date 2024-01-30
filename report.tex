@@ -186,11 +186,11 @@
 	
 	To find the cross-entropy and perplexity, we used the models defined in the .py files with the simple formulas of cross entropy and perplexity in the corresponding functions. 
 	
-	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In \texttt{ngram\_model\_alpha\_search()} we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-15}, 1]$.
+	What we needed next was to find the optimal alpha for the probability formulas, as we stated earlier. In \texttt{ngram\_model\_alpha\_search()} we initialize a numpy array to store the entropy values. Iterating the alpha values, we calculate the cross entropy for each alpha. Finally, we keep the index with the best alpha (the one with the smallest cross entropy value). We searched for $1000$ alpha values taken from an exponential sequence in the range of $[10^{-15}, 1]$. The perplexity scores were computed on a separate validation (development) set.
 	
 	The change in entropy depending on the $\alpha$ smoothing hyperparameter can be seen in Figures \ref{fig::bi_alpha_entropy}, \ref{fig::tri_alpha_entropy}, \ref{fig::li_alpha_entropy}. The Bi-gram model exhibits high variance depending on different $\alpha$ values, where for a very tight region close to 0 (but not too close) results in catastrophic loss of performance. The tri-gram and linear interpolation models on the other hand exhibit relative stability, with very small $\alpha$ values being slightly favored.
 	
-
+	
 	 \begin{figure}
 	    \centering
 	    \includegraphics[width=8cm]{"bi_alpha.png"}
@@ -214,7 +214,7 @@
 	\end{figure}
 
 
-	The cross-entropy and perplexity scores of the two models on the test corpus can be found in Figures \ref{fig::scores_bigram}, \ref{fig::scores_trigram}. The scores tend to vary greatly depending on the given seed, fluctuating between $40$ and $1,600$ perplexity. This indicates an unstable classifier, which is probably caused by the clashing domains of our two main datasets, as well as relative lack of relevant data which cause our model to overfit.
+	The cross-entropy and perplexity scores of the two models on the \textit{test} corpus can be found in Figures \ref{fig::scores_bigram}, \ref{fig::scores_trigram}. The scores tend to vary greatly depending on the given seed, fluctuating between $40$ and $1,800$ perplexity. This indicates an unstable classifier, which is probably caused by the clashing domains of our two main datasets, as well as relative lack of relevant data which cause our model to underfit. This can be clearly seen by the training and test scores not being far apart, while both featuring high perplexity. For the sake of brevity we do not include the training scores in this report, although they are available in the notebook.
 
 	\begin{figure}
 	    \centering
