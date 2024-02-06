@@ -1,3 +1,4 @@
+from sklearn.preprocessing import LabelBinarizer
 from tqdm.auto import tqdm
 from more_itertools import windowed
 import conllu
@@ -7,8 +8,23 @@ import pandas as pd
 import itertools
 
 
-def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedding_model, pad_token: str = "<PAD>") \
-        -> tuple[np.ndarray, list[str]]:
+def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedding_model,
+               binarizer: LabelBinarizer, train_binarizer: bool = False) \
+        -> tuple[np.ndarray, np.ndarray]:
+    """
+    Preprocess the data for training a neural network by generating context-aware window embeddings
+    and corresponding binary labels for POS tags.
+
+    :param df: The DataFrame containing the data with columns 'words', 'pos', and 'sent_id'.
+    :param window_size: Size of the context window.
+    :param max_window_count: Maximum number of windows to consider.
+    :param embedding_model: The embedding model used to compute word embeddings.
+    :param binarizer: The LabelBinarizer used to transform POS tags into binary labels.
+    :param train_binarizer: Whether to fit the binarizer on the target data.
+    :return: Tuple containing the generated embeddings (X) and binary labels (y).
+    """
+    pad_token = "<PAD>"
+
     print("Calculating windows...")
     windows = windowed_sentence(df, window_size, pad_token)
 
@@ -17,13 +33,26 @@ def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedd
 
     print("Computing window embeddings...")
     window_lim = min(max_window_count, len(windows))
-    embeddings = compute_embeddings(embedding_model, windows[:window_lim], pad_token)
-    embeddings = np.array(embeddings).T
 
-    return embeddings, targets[:window_lim]
+    embeddings = compute_embeddings(embedding_model, windows[:window_lim], pad_token)
+    embeddings = np.array(embeddings)
+
+    if train_binarizer:
+        target_vec = binarizer.fit_transform(targets[:window_lim])
+    else:
+        target_vec = binarizer.transform(targets[:window_lim])
+
+    return embeddings, target_vec
 
 
 def windowed_sentence(df, window_size: int, pad_token: str):
+    """
+    Generate windowed sentences from a DataFrame.
+    :param df: The DataFrame containing the data with columns 'words', 'pos', and 'sent_id'.
+    :param window_size: Size of the context window.
+    :param pad_token: The padding token used in window creation.
+    :return: List of windowed sentences.
+    """
     windows = []
 
     for sentence_id in tqdm(set(df.sent_id)):
@@ -37,7 +66,14 @@ def windowed_sentence(df, window_size: int, pad_token: str):
     return windows
 
 
-def windowed_tags(df,  window_size: int, pad_token: str):
+def windowed_tags(df, window_size: int, pad_token: str):
+    """
+    Generate windowed POS tags from a DataFrame.
+    :param df: The DataFrame containing the data with columns 'words', 'pos', and 'sent_id'.
+    :param window_size: Size of the context window.
+    :param pad_token: The padding token used in window creation.
+    :return: List of windowed POS tags.
+    """
     targets = []
 
     for sentence_id in tqdm(set(df.sent_id)):
@@ -79,6 +115,11 @@ def compute_embeddings(model, windows, pad_token: str) -> list[np.ndarray]:
 
 
 def conllu_to_pd(file_path: str) -> pd.DataFrame:
+    """
+    Convert a CoNLL-U file to a Pandas DataFrame.
+    :param file_path: Path to the CoNLL-U file.
+    :return: A DataFrame with columns 'words', 'pos', and 'sent_id'.
+    """
     print("\tReading data...")
     with open(file_path, "r") as file:
         data = file.read()
