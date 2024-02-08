@@ -15,6 +15,13 @@
 \usepackage{subcaption} %for subfigures
 \usepackage{hyperref}
 
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=magenta,      
+	urlcolor=cyan
+}
+
 
 \pagenumbering{arabic}
 \graphicspath{ {./output/}{./images/} }
@@ -49,6 +56,135 @@
 	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of MLP models for sentiment analysis and POS tagging tasks.
 	
 	This report and its associated code, analysis and results were conducted by the two authors. Specifically, the sentiment analysis task was performed by Drouzas Vasilis, and the POS-tagging task by Tsirmpas Dimitris. This report was written by both authors.
+		
+	Note that due to the relative custom code complexity, most of the code used in this section was developed and imported from python source files located in the `tasks` module. In-depth documentation and implementation details can be found in these files. 
 	
+	
+	\section{POS Tagging}
+	
+	POS tagging is a language processing task where words in a given text are assigned specific grammatical categories, such as nouns, verbs, or adjectives. The objective is to analyze sentence structure. 
+	
+	In this section we describe how we can leverage pre-trained word embeddings to create a context-aware MLP classifier.
+	
+	
+	\subsection{Dataset}
+	
+	Acquiring and preprocessing our data with the goal of eventually acquiring a sufficient representation of our text is the most difficult and time-consuming task. We thus split it in distinct phases:
+	
+	\begin{itemize}
+		\item Original dataset acquisition and parsing
+		\item Qualitative analysis and preprocessing
+		\item Transformation necessary for the NLP task
+	\end{itemize}
+	
+	Each of these distinct steps are individually analyzed below.
+	
+	
+	\subsubsection{Acquisition}
+	
+	We select the \href{https://universaldependencies.org/treebanks/en_ewt/index.html}{English EWT-UD} tree, which is the largest currently supported collection for POS tagging tasks for the English language.
+	
+	This corpus contains 16622 sentences, 251492 tokens and 254820 syntactic words, as well as 926 types of words that contain both letters and punctuation, such as 's, n't, e-mail, Mr., ’s, etc). This is markedly a much higher occurrence than its siblings, and therefore may lead to a slightly more difficult task.
+	
+	The dataset is made available in \texttt{conllu} format, which we parse using the recommended \texttt{conllu} python library. We create a dataframe for every word and its corresponding POS tag and link words belonging to the same sentences by a unique sentence ID. The data are already split to training, validation and test sets, thus our own sets correspond to the respective split files.
+	
+	We are interested in the UPOS (Universal Part of Speech) tags for English words.
+	
+	\subsubsection{Qualitative Analysis}
+	
+	Our training vocabulary is comprised of $17113$ words. We include qualitative statistics on the sentences of our dataset in Table \ref{tab::ex-10-stats}. The splits are explicitly mentioned separately because the splitting was performed by the dataset authors and not by random sampling. We would therefore like to confirm at a glance whether their data are similar.
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Count} & \cellcolor{blue!25}\textbf{Mean} & \cellcolor{blue!25}\textbf{Std} &
+			\cellcolor{blue!25}\textbf{Min} & \cellcolor{blue!25}\textbf{25\%} & \cellcolor{blue!25}\textbf{50\%} &
+			\cellcolor{blue!25}\textbf{75\%} &
+			\cellcolor{blue!25}\textbf{Max} \\
+			\hline
+			Training & 12544 & 16.52 & 12.55 & 1  & 7 & 14 & 23 & 160 \\\hline
+			Validation & 2000  & 12.75 & 10.56 & 1 & 5 & 10 & 17 & 77  \\\hline
+			Test & 2077 & 12.25 & 10.75  & 1 & 4 & 9 & 17 & 84 
+			\\\hline
+		\end{tabular}
+	\caption{Summary and order statistics for the number of words in the sentences of each data split.}
+	\label{tab::ex-10-stats}
+	\end{table}
+	
+	
+	\subsubsection{Preprocessing}
+	
+	Given the nature of our task we can not implement preprocessing steps such as removing punctuation marks, stopwords or augmenting the dataset. Thus, the only meaningful preprocessing at this stage thus would be converting the words to lowercase. We believe that the context of each word will carry enough information to distinguish its POS tag regardless of case. 
+	
+	The general algorithm to calculate the window embeddings on our dataset can be found in Algorithm \ref{al::window-embeds}. Note that this algorithm does not represent the actual python implementation. 
+	
+	The algorithm uses a few external functions which are not described here for the sake of brevity. \texttt{get\_window()} returns the context of the word inside a sentence, including padding where needed, \texttt{embedding()} returns the word embedding for a single word and \texttt{concatenate} returns a single element from a list of elements. The rest of the functions should be self-explanatory.
+	
+	\begin{algorithm}
+		\caption{Window Embedding creation algorithm from raw-text sentences.} 
+		\label{al::window-embeds}
+		
+		\hspace*{\algorithmicindent} \textbf{Input} sentences, window\_lim: a list of sentences and an upper bound of windows to be computed\\
+		\hspace*{\algorithmicindent} \textbf{Output} tuple(windows, targets): the window embeddings and the POS tag corresponding to the median word of each window
+		\begin{algorithmic}[1]	
+			\State windows = list()
+			\State targets = list()
+			
+			\State % whitespace
+			
+			\For {sentence in sentences}
+			
+				\For {word in sentence}
+					\State window = get\_window(word, sentence)
+					\State target = get\_tag(word)
+					
+					\State windows.add(window)
+					\State targets.add(target)
+				\EndFor
+			
+			\EndFor
+			
+			\State % whitespace
+			
+			\State window\_embeddings = list()
+			\For{window in windows}
+			
+				\If {window\_embeddings.size $\geq$ window\_lim}
+					\State break
+				\EndIf
+				
+				\State % whitespace
+				
+				\State word\_embeddings = list()
+				
+				
+				\For{word in window}
+				
+					\If{word is PAD\_TOKEN}
+						\State word\_embeddings.add(zeros(embedding\_size))
+					\Else
+						\State word\_embeddings.add(embedding(word))
+					\EndIf
+					
+				\EndFor
+					
+				\State window\_embedding = concatenate(word\_embeddings)
+				\State window\_embeddings.add(window\_embedding)
+			\EndFor
+			
+			\State % whitespace
+			
+			\State targets\_vec = list()
+			\For{target in targets}
+				\State targets\_vec.add(one\_hot(target))
+			\EndFor
+			
+			\State % whitespace
+			
+			\State \Return window\_embeddings, targets\_vec
+			
+		\end{algorithmic} 
+	\end{algorithm}
+
 	
 \end{document}
