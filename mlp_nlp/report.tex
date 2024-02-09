@@ -48,8 +48,8 @@
 		
 	\end{titlepage}
 	
-	%\tableofcontents
-	%\newpage	
+	\tableofcontents
+	\newpage	
 	
 	\section{Introduction}
 	
@@ -209,6 +209,35 @@
 	
 	The results of the classifier can be found in Figure TODO. These results make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
 	
-	Thus, besides quantitative statistics such as cross accuracy and f1-score, we should pay close attention to the precision and recall statistics for the more variable POS tags such as "NOUN" or "VERB" in order to properly validate our MLP classifier.
+	Thus, besides quantitative statistics such as categorical accuracy and f1-score, we should pay close attention to the precision and recall statistics for the more variable POS tags such as "NOUN" or "VERB" in order to properly evaluate our MLP classifier.
+	
+
+	\subsection{MLP Classifier}
+	
+	\subsubsection{Hyper-parameter tuning}
+	
+	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model.
+	
+	The parameter search consists of:
+	\begin{itemize}
+		\item The depth of the model (the number of layers)
+		\item The height of the model (the number of parameters by layer) 
+		\item The learning rate
+	\end{itemize}
+
+	
+	The parameter search does NOT consist of:
+	\begin{itemize}
+		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the tradeoff between training time and overfit avoidance
+		\item Activation functions, since they rarely significantly influence the model's performance
+	\end{itemize}
+	
+	With this scheme we hope to maximize the area and granularity of our search to the hyper-parameters that are most likely to significantly influence the final results.
+	
+	We implement early stopping and set a maximum iteration limit of $70$. We assume that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model.
+	
+	\subsubsection{Results}
+	
+	TODO
 	
 \end{document}
