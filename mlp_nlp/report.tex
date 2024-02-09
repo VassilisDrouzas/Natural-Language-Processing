@@ -114,11 +114,11 @@
 	
 	\subsubsection{Preprocessing}
 	
-	Given the nature of our task we can not implement preprocessing steps such as removing punctuation marks, stopwords or augmenting the dataset. Thus, the only meaningful preprocessing at this stage thus would be converting the words to lowercase. We believe that the context of each word will carry enough information to distinguish its POS tag regardless of case. 
+	Given the nature of our task we can not implement preprocessing steps such as removing punctuation marks, stopwords or augmenting the dataset. Thus, the only meaningful preprocessing at this stage would be converting the words to lowercase. We believe that the context of each word will carry enough information to distinguish its POS tag regardless of case. 
 	
-	The general algorithm to calculate the window embeddings on our dataset can be found in Algorithm \ref{al::window-embeds}. Note that this algorithm does not represent the actual python implementation. 
+	Another issue we need to address before continuing is that of words being part of (depending on) other words for their POS tag. Those would be words such as "don't", "couldn't" or "you're". In the standard UPOS schema these are defined as two or more separate words, where the first is represented by its standard POS tag, and the rest as part of that tag (UPOS tag "PART"). For instance, "don't" would be split into "do" and "n't" with "AUX" and "PART" tags respectively. In our dataset, these words are represented both in the manner described above followed by the full word ("don't") tagged with the pseudo-tag "\_". We remove the latter representation from the working dataset.
 	
-	The algorithm uses a few external functions which are not described here for the sake of brevity. \texttt{get\_window()} returns the context of the word inside a sentence, including padding where needed, \texttt{embedding()} returns the word embedding for a single word and \texttt{concatenate} returns a single element from a list of elements. The rest of the functions should be self-explanatory.
+	The general algorithm to calculate the window embeddings on our dataset can be found in Algorithm \ref{al::window-embeds}. The algorithm uses a few external functions which are not described here for the sake of brevity. \texttt{get\_window()} returns the context of the word inside a sentence, including padding where needed, \texttt{embedding()} returns the word embedding for a single word and \texttt{concatenate} returns a single element from a list of elements. The rest of the functions should be self-explanatory.  Note that this algorithm does not represent the actual python implementation.
 	
 	\begin{algorithm}
 		\caption{Window Embedding creation algorithm from raw-text sentences.} 
