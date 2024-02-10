@@ -237,6 +237,7 @@
 	We implement early stopping and set a maximum iteration limit of $70$. We assume that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times since this operation is very computationally heavy. We don not yet aim to create the best classifier, so slightly suboptimal weights are not a problem for the purposes of the hyperparameter search.
 	We use a relatively very large batch size to improve training times since this operation is very computationally heavy. We don't yet aim to create the best classifier, so slightly suboptimal weights are not a problem for the purposes of the hyperparameter search.
 	
+	
 	\subsubsection{Training}
 		
 	We now re-train our model with a much smaller batch size and keep track of the training history and best weights by validation loss. 
@@ -244,6 +245,13 @@
 	Unfortunately, the different batch size means we can not rely on the hyper parameter search to get an estimation of training epochs. Thus, we rely on early-stopping on the validation data to ensure our model does not overfit as a result of training time. 
 	
 	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=10cm]{"ex_10_fit.png"}
+		\caption{Loss and accuracy on the training and validation sets depending on the number of epochs.}
+		\label{fig::common_words}
+	\end{figure}
 	
 	\subsubsection{Results}
 	
