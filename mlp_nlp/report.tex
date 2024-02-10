@@ -246,11 +246,13 @@
 	
 	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications.
 	
+	This phenomenon is demonstrated in Figure \ref{fig::ex_10_fit}.
+	
 	\begin{figure}
 		\centering
 		\includegraphics[width=10cm]{"ex_10_fit.png"}
 		\caption{Loss and accuracy on the training and validation sets depending on the number of epochs.}
-		\label{fig::common_words}
+		\label{fig::ex_10_fit}
 	\end{figure}
 	
 	\subsubsection{Results}
