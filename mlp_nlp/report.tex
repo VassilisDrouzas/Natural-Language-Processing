@@ -5,7 +5,7 @@
 \usepackage{alphabeta}
 \usepackage{libertine}
 \usepackage{graphicx}
-\usepackage{biblatex}[sorting=nty] % sort alphabetically
+\usepackage[backend=biber]{biblatex}
 \usepackage[table]{xcolor}
 \usepackage{mathptmx} % Times New Roman
 \usepackage{geometry}
@@ -17,9 +17,9 @@
 
 \hypersetup{
 	colorlinks=true,
-	linkcolor=blue,
+	linkcolor=black,
 	filecolor=magenta,      
-	urlcolor=cyan
+	urlcolor=blue
 }
 
 
@@ -228,16 +228,27 @@
 	
 	The parameter search does NOT consist of:
 	\begin{itemize}
-		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the tradeoff between training time and overfit avoidance
+		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the trade-off between training time and overfit avoidance
 		\item Activation functions, since they rarely significantly influence the model's performance
 	\end{itemize}
 	
 	With this scheme we hope to maximize the area and granularity of our search to the hyper-parameters that are most likely to significantly influence the final results.
 	
-	We implement early stopping and set a maximum iteration limit of $70$. We assume that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model.
+	We implement early stopping and set a maximum iteration limit of $70$. We assume that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times since this operation is very computationally heavy. We don not yet aim to create the best classifier, so slightly suboptimal weights are not a problem for the purposes of the hyperparameter search.
+	We use a relatively very large batch size to improve training times since this operation is very computationally heavy. We don't yet aim to create the best classifier, so slightly suboptimal weights are not a problem for the purposes of the hyperparameter search.
+	
+	\subsubsection{Training}
+		
+	We now re-train our model with a much smaller batch size and keep track of the training history and best weights by validation loss. 
+	
+	Unfortunately, the different batch size means we can not rely on the hyper parameter search to get an estimation of training epochs. Thus, we rely on early-stopping on the validation data to ensure our model does not overfit as a result of training time. 
+	
+	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications.
 	
 	\subsubsection{Results}
 	
 	TODO
+	
+	\printbibliography
 	
 \end{document}
