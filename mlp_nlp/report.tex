@@ -14,7 +14,8 @@
 \usepackage{mathtools}
 \usepackage{subcaption} %for subfigures
 \usepackage{hyperref}
-\usepackage{booktabs}
+\usepackage{amsmath}
+
 
 \hypersetup{
 	colorlinks=true,
@@ -256,10 +257,9 @@
 		\label{fig::ex_10_fit}
 	\end{figure}
 	
-	
 	\subsubsection{Results}
 	
-	The results of our MLP classifier compared to the baseline model mentioned above can be found in Tables \ref{tab::ex_10_train}, \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables.
+	The results of our MLP classifier compared to the baseline model          mentioned above can be found in Tables \ref{tab::ex_10_train}, \    \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables.
 	
 	We note an increase in all metrics for our MLP classifier, especially in tags such as "SCONJ" (subordinating conjunction), and VERB and NOUN (which we hypothesized at the beginning of the report). The only notable exception is the "X" tag (other) which is attributed to unintelligible material, foreign words and word fragments. This is an acceptable drawback, since these are easily caught by preprocessing or weak classifiers anyway.
 
@@ -269,7 +269,243 @@
 	
 	\input{output/ex_10_test.tex}
 
-	
+
+
+        \section{ Sentiment Analysis}
+        
+    Sentiment analysis, also known as opinion mining, is the process of analyzing text to determine the sentiment or emotional tone expressed within it. The goal of sentiment analysis is to understand the attitudes, opinions, and emotions conveyed by the text. 
+
+    \subsection{Dataset}
+    Here we will be working with the Cornell Movie Review dataset, which consists of 2000 movie reviews, split equally in 1000 positive and 1000 negative ones. The goal here will be to develop classifiers that will effectively understand whether a review is a positive or negative one, based on the data it has been trained on.We begin by taking a brief look into our dataset.
+    \subsubsection{Average Document Length (Before pre-processing)}
+
+    The average document length in words and characters before the processing can be checked in Figure \ref{fig::len_before_preprocess}.
+
+        \begin{figure}
+	    \centering
+	    \includegraphics[width=11cm]{"lengths_before_preprocessing".png}
+	    \caption{Average Document length in words and characters (before the pre-processing).}
+	    \label{fig::len_before_preprocess}
+	\end{figure}
+
+
+    \subsubsection{Pre-processing}
+    
+     For demonstration reasons, we start by printing the 20 most frequent words in the text, in Figure \ref{fig::20_common}.
+
+        \begin{figure}
+	    \centering
+            \includegraphics[width=4cm]{"20_most_common_words".png}
+	    \caption{Average Document length in words and characters (before the pre-processing).}
+	    \label{fig::20_common}
+	\end{figure}
+
+
+
+     Most of these words are actually stop words. As in most text classification problems, we would typically need to remove the stop words of the text.
+     
+     The english stopwords is a package of 179 words that in general, would not help in a sentiment analysis problem. But, since they include terms that are negative, removing them could prove harmful for our case, since we are dealing with a sentiment analysis problem.
+
+    e.g. imagine the phrase "I didn't like the film" to end up "like film". Disastrous, right?
+    
+    So, the plan is to remove all the stop words that include negative meaning before the preprocessing.
+    The stop words that we decided to keep in the text are shown in Figure \ref{fig::to_keep} :
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=4cm]{"to_keep_words".png}
+	    \caption{Average Document length in words and characters (before the pre-processing).}
+	    \label{fig::to_keep}
+    \end{figure}
+
+    Moving on to the pre-processing task, the steps performed are the following:
+    \begin{itemize}
+        \item{ Combination to a single document.}
+        \item{ Convertion to lowercase.}
+        \item{Lemmatization and stop words extraction.}
+        \item{ Punctuation removal.}
+        \item{ Number removal.}
+         \item{Single characters removal.}
+        \item{ Converting multiple spaces to single ones.}
+    \end{itemize}
+
+    \subsubsection{Average Document Length (after pre-processing)}
+    The final average document length is shown in Figure \ref{fig::after_preprocess}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=11cm]{"lengths_after_preprocessing".png}
+	    \caption{Average Document length in words and characters (before the pre-processing).}
+	    \label{fig::after_preprocess}
+    \end{figure}
+
+    \subsubsection{Splitting the dataset}
+    We decided to split the (processed) dataset into the training set (70\%), development set (15\%) and test set (15\%). The sizes of each set are shown in Table \ref{tab::ex-9-stats}.
+
+    \begin{table}
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
+			\cellcolor{blue!25}\textbf{Total Document Count}\\
+			\hline
+			Training & 36624 & 1400 \\\hline
+			Validation & 16948  & 300 \\\hline
+			Test & 16780 & 300 \\\hline
+		\end{tabular}
+		\centering
+		\caption{Total text volume of each data split.}
+		\label{tab::ex-9-stats}
+	\end{table}
+    
+
+    \subsubsection{TF-IDF}
+    We used the unigram and bi-gram TF-IDF features, defining the maximum number of features to 5000. The shapes of the data are shown in Figure \ref{fig::tf_idf}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=11cm]{"shape_tfidf".png}
+	    \caption{The shapes of the TF-IDF vectors.}
+	    \label{fig::tf_idf}
+    \end{figure}
+
+    \subsubsection{Feature selection with SVD}
+    We performed dimensionality reduction with the TruncatedSVD() method, reducing the number of features from 5000 to 500. The new shapes can be found in Figure \ref{fig::svd}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=11cm]{"shape_after_svd".png}
+	    \caption{The new shapes after doing SVD analysis.}
+	    \label{fig::svd}
+    \end{figure}
+
+    \subsection{Classifiers}
+    \subsubsection{DummyClassifier}
+    DummyClassifier makes predictions that ignore the input features. This classifier serves as a simple baseline to compare against other more complex classifiers.The strategy to generate predictions was set to ‘most\_frequent’,  meaning that the predict method always returns the most frequent class label. The results of this classifier are demonstrated in Figure \ref{fig::dummy_metrics}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=8cm]{"DummyClf_metrics".png}
+	    \caption{Classification results of DummyClassifier for training,test and validation sets.}
+	    \label{fig::dummy_metrics}
+    \end{figure}
+
+
+    As expected, the results are poor since the decision of the classifier depends exclusively only the majority class.
+
+    \subsubsection{Logistic Regression}
+    Logistic Regression is a statistical method used for binary classification tasks, where the output variable takes only two possible outcomes.
+    Before applying Logistic Regression, we will perform a grid search to find the optimal parameters to run the classifier. The parameters we tried are the following:
+    \begin{itemize}
+    \item{Solver: We tested ‘liblinear’ and ‘saga’ solvers}
+    \item{Penalty: We tested ‘l1’, ‘l2’, ‘elasticnet’ reguralization penalties}
+    \item{C: We tested values of 0.001, 0.01, 0.1, 1 and 10 (inverse of regularization strength)}
+    \end{itemize}
+
+    The best hyperparameters were the following:
+    C= 10, penalty= ‘l1’, solver = ‘liblinear’.
+    
+    \ 
+
+    \ 
+    Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Figure \ref{fig::LR_metrics} .
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=8cm]{"LRClf_metrics".png}
+	    \caption{Metrics of the Logistic Regression on the training, test and development sets.}
+	    \label{fig::LR_metrics}
+     \end{figure}
+
+
+    \subsection{Our custom MLP classifier}
+
+    First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying fit\_transform() and transform() to the training and development 1-hot vectors respectively.
+    Now, it’s time to define our MLP model. We followed the same method as before, i.e. we used the keras\_tuner library to perform random search with parameters the depth of the model, the height and the learning rate.
+    Early stopping is implemented , with main criterion the validation loss. The number of epochs was defined to 100. We experimented with a variety of different hyperparameter combinations. The first experiments examined the quantity of the hidden layers, keeping other parameters constant. The results tended to optimize using only one hidden layer, meaning that the problem can be solved with a small network. After defining the number of hidden layers to one, we examined other hyperparameter combinations:
+
+  
+    \begin{center}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|}
+    \hline
+    \textbf{Model} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6*} & \textbf{7*} \\
+    \hline
+    \#Hidden layers & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
+    \hline
+    Batch size & 256 & 256 & 256 & 128 & 512 & 256 & 256 \\
+    \hline
+    Min\_hid\_size & 64 & 32 & 16 & 32 & 32 & 32 & 32 \\
+    \hline
+    Max\_hid\_size & 1024 & 512 & 206 & 512 & 512 & 512 & 512 \\
+    \hline
+    
+    
+    
+    \end{tabular}
+    \end{center}
+
+    \begin{itemize}
+        \item{Model 1: Good loss, mediocre accuracy.}
+        \item{Model 2: Optimal loss \& accuracy.}
+        \item{Model 3: Worse results vs Model (2) in terms of loss.}
+        \item{Model 4: Data tend to overfit.}
+        \item{Model 5: Worse results compared to Model (2) in both accuracy,loss.}
+        \item{Model 6 (*removing the subsequent layer): Similar results to model (2).}
+        \item{Model 7(*Learning rate set to 1e-5): Worse results compared to model(2).}
+
+
+    \end{itemize}
+    The model we chose to keep is Model 2, which seems to be the optimal one after testing the hyperparameters. The results we gain are shown in Figures \ref{fig::mlp_accuracy}, \ref{fig::mlp_loss}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=11cm]{"MLP_accuracy".png}
+	    \caption{MLP accuracy as a function of epochs.}
+	    \label{fig::mlp_accuracy}
+    \end{figure}
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=11cm]{"MLP_loss".png}
+	    \caption{MLP loss as a function of epochs.}
+	    \label{fig::mlp_loss}
+	\end{figure}
+
+
+
+    At a first glance, the curves showing the model accuracy do seem a bit weird. Specifically, we would more like expect the training accuracy to start at a lower rate and increase over time. But what we see is that it actually starts already pretty high (96.71\%) and ends up slightly higher (98.36\%). It means our model very accurately predicts the training data even from the beginning.
+
+    
+    As far as the validation data are concerned, we see that no significant improvements are made while the number of epochs increases.
+
+    
+    In general, the binary accuracies for both training and validation sets are relatively high and show similar trends of improvement over epochs. Additionally, there is no significant gap between the training and validation accuracies. This suggests that the model is not overfitting to the training data. 
+
+    Our prediction is that the data are already quite simple to distinguish, so the parameters are already too many to learn to distinguish. This is why the development accuracy does not show actually an improvement over time. 
+    Now regarding the training/development losses, here we see that both training and validation losses decrease together, which suggests that the model is generalizing well.
+
+    Next, we will provide the metrics (Precision,Recall, F1 score and the AUC scores) for training, development and test subsets in Figure \ref{fig::mlp_metrics}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=11cm]{"MLP_metrics".png}
+	    \caption{Metrics for the MLP classifier for both classes for the training, development and test sets.}
+	    \label{fig::mlp_metrics}
+    \end{figure}
+
+    
+
+
+
+    Finally, let’s take a look at the Macro-averaged metrics (averaging the corresponding scores of the previous bullet over the classes) for the training, development and test subsets, as shown in Figure \ref{fig::mlp_macro_metrics}.
+
+    \begin{figure}
+	    \centering
+            \includegraphics[width=4cm]{"MLP_Macro_metrics".png}
+	    \caption{Macro-Metrics for the MLP classifier for both classes for the training, development and test sets.}
+	    \label{fig::mlp_macro_metrics}
+    \end{figure}
+
+    
 
 	\printbibliography
 	
