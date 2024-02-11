@@ -1,4 +1,4 @@
-\documentclass[11pt, a4paper]{article}
+\documentclass[10pt, a4paper]{article}
 
 \usepackage[utf8]{inputenc}
 \usepackage[greek, english]{babel}
@@ -15,6 +15,7 @@
 \usepackage{subcaption} %for subfigures
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{booktabs}
 
 
 \hypersetup{
@@ -142,7 +143,7 @@
 		\caption{Window Embedding creation algorithm from raw-text sentences.} 
 		\label{al::window-embeds}
 		
-		\hspace*{\algorithmicindent} \textbf{Input} sentences, window\_lim: a list of sentences and an upper bound of windows to be computed\\
+		\hspace*{\algorithmicindent} \textbf{Input} sentences: a list of sentences \\
 		\hspace*{\algorithmicindent} \textbf{Output} tuple(windows, targets): the window embeddings and the POS tag corresponding to the median word of each window
 		\begin{algorithmic}[1]	
 			\State windows = list()
@@ -166,12 +167,6 @@
 			
 			\State window\_embeddings = list()
 			\For{window in windows}
-			
-				\If {window\_embeddings.size $\geq$ window\_lim}
-					\State break
-				\EndIf
-				
-				\State % whitespace
 				
 				\State word\_embeddings = list()
 				
@@ -189,17 +184,10 @@
 				\State window\_embedding = concatenate(word\_embeddings)
 				\State window\_embeddings.add(window\_embedding)
 			\EndFor
-			
+		
 			\State % whitespace
 			
-			\State targets\_vec = list()
-			\For{target in targets}
-				\State targets\_vec.add(one\_hot(target))
-			\EndFor
-			
-			\State % whitespace
-			
-			\State \Return window\_embeddings, targets\_vec
+			\State \Return window\_embeddings, one\_hot(targets)
 			
 		\end{algorithmic} 
 	\end{algorithm}
