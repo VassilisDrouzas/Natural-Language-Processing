@@ -14,6 +14,7 @@
 \usepackage{mathtools}
 \usepackage{subcaption} %for subfigures
 \usepackage{hyperref}
+\usepackage{booktabs}
 
 \hypersetup{
 	colorlinks=true,
@@ -255,10 +256,21 @@
 		\label{fig::ex_10_fit}
 	\end{figure}
 	
+	
 	\subsubsection{Results}
 	
-	TODO
+	The results of our MLP classifier compared to the baseline model mentioned above can be found in Tables \ref{tab::ex_10_train}, \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables.
 	
+	We note an increase in all metrics for our MLP classifier, especially in tags such as "SCONJ" (subordinating conjunction), and VERB and NOUN (which we hypothesized at the beginning of the report). The only notable exception is the "X" tag (other) which is attributed to unintelligible material, foreign words and word fragments. This is an acceptable drawback, since these are easily caught by preprocessing or weak classifiers anyway.
+
+	\input{output/ex_10_train.tex}
+	
+	\input{output/ex_10_valid.tex}
+	
+	\input{output/ex_10_test.tex}
+
+	
+
 	\printbibliography
 	
 \end{document}
