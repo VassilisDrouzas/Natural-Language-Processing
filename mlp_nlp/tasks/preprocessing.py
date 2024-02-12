@@ -1,3 +1,5 @@
+from typing import List, Tuple, Callable
+
 from sklearn.preprocessing import LabelBinarizer
 from tqdm.auto import tqdm
 from more_itertools import windowed
@@ -8,8 +10,8 @@ import pandas as pd
 import itertools
 
 
-def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedding_model,
-               binarizer: LabelBinarizer, train_binarizer: bool = False) \
+def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embed_func: Callable[[str], np.ndarray],
+               binarizer: LabelBinarizer, pad_token: str, train_binarizer: bool = False) \
         -> tuple[np.ndarray, np.ndarray]:
     """
     Preprocess the data for training a neural network by generating context-aware window embeddings
@@ -18,12 +20,11 @@ def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedd
     :param df: The DataFrame containing the data with columns 'words', 'pos', and 'sent_id'.
     :param window_size: Size of the context window.
     :param max_window_count: Maximum number of windows to consider.
-    :param embedding_model: The embedding model used to compute word embeddings.
+    :param embed_func: A function that generates the embedding for a single word.
     :param binarizer: The LabelBinarizer used to transform POS tags into binary labels.
     :param train_binarizer: Whether to fit the binarizer on the target data.
     :return: Tuple containing the generated embeddings (X) and binary labels (y).
     """
-    pad_token = "<PAD>"
 
     print("Calculating windows...")
     windows = windowed_sentence(df, window_size, pad_token)
@@ -34,7 +35,7 @@ def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedd
     print("Computing window embeddings...")
     window_lim = min(max_window_count, len(windows))
 
-    embeddings = compute_embeddings(embedding_model, windows[:window_lim], pad_token)
+    embeddings = compute_embeddings(embed_func, windows[:window_lim])
     embeddings = np.array(embeddings)
 
     if train_binarizer:
@@ -45,7 +46,7 @@ def preprocess(df: pd.DataFrame, window_size: int, max_window_count: int, embedd
     return embeddings, target_vec
 
 
-def windowed_sentence(df, window_size: int, pad_token: str):
+def windowed_sentence(df, window_size: int, pad_token: str) -> list[tuple[str, ...]]:
     """
     Generate windowed sentences from a DataFrame.
     :param df: The DataFrame containing the data with columns 'words', 'pos', and 'sent_id'.
@@ -66,7 +67,7 @@ def windowed_sentence(df, window_size: int, pad_token: str):
     return windows
 
 
-def windowed_tags(df, window_size: int, pad_token: str):
+def windowed_tags(df, window_size: int, pad_token: str) -> list[str]:
     """
     Generate windowed POS tags from a DataFrame.
     :param df: The DataFrame containing the data with columns 'words', 'pos', and 'sent_id'.
@@ -87,27 +88,22 @@ def windowed_tags(df, window_size: int, pad_token: str):
     return targets
 
 
-def compute_embeddings(model, windows, pad_token: str) -> list[np.ndarray]:
+def compute_embeddings(embed_func: Callable[[str], np.ndarray], windows: list[tuple[str, ...]]) -> list[np.ndarray]:
     """
     Compute context-aware window embeddings for a list of windowed strings.
-    :param pad_token: the string with which padding at the start and end of the sentence will be represented
-    :param model: a spacy model used to compute individual word embeddings
+    :param embed_func: A function that generates the embedding for a single word.
     :param windows: a list of windows, each being a list of strings
 
     :return: A list of window embeddings.
     :rtype: list[str]
     """
     embeddings = []
-    embedding_size = 300
 
     for window in tqdm(windows):
         word_embeddings = []
 
         for word in window:
-            if word == pad_token:
-                word_embeddings.append(np.zeros(embedding_size))
-            else:
-                word_embeddings.append(model(word).vector)
+            word_embeddings.append(embed_func(word))
 
         embeddings.append(np.hstack(word_embeddings))
 

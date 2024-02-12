@@ -249,4 +249,5 @@ fabric.properties
 # project-specific settings
 intermediate/
 KT_DIR/
+input/
 
