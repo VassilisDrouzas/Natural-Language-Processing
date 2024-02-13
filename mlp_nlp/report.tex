@@ -270,7 +270,7 @@
     Sentiment analysis, also known as opinion mining, is the process of analyzing text to determine the sentiment or emotional tone expressed within it. The goal of sentiment analysis is to understand the attitudes, opinions, and emotions conveyed by the text. 
 
     \subsection{Dataset}
-    Here we will be working with the Cornell Movie Review dataset, which consists of 2000 movie reviews, split equally in 1000 positive and 1000 negative ones. The goal here will be to develop classifiers that will effectively understand whether a review is a positive or negative one, based on the data it has been trained on.We begin by taking a brief look into our dataset.
+    Here we will be working with the \href{http://www.cs.cornell.edu/people/pabo/movie-review-data/}{Cornell Movie Review dataset}, which consists of 2000 movie reviews, split equally in 1000 positive and 1000 negative ones. The goal here will be to develop classifiers that will effectively understand whether a review is a positive or negative one, based on the data it has been trained on.We begin by taking a brief look into our dataset.
     
     
     \subsubsection{Average Document Length }
@@ -354,7 +354,7 @@
     \end{itemize}
 
     \subsubsection{Feature selection with SVD}
-    We performed dimensionality reduction with the TruncatedSVD() method, reducing the number of features from 5000 to 500. The new shapes are:
+    We performed dimensionality reduction with the \texttt{TruncatedSVD()} method, reducing the number of features from 5000 to 500. The new shapes are:
 
     
     \begin{itemize}
@@ -416,15 +416,12 @@
     \hline
     0.001 & 1 & 64 & 0.4 & 1\\
     \hline
-    0.01 & 2 & 128 & 0.5 & 16\\
+    0.01 & 2 & 128 & 0.5 & 64\\
     \hline
-    0.1 & 3 & 256 & & 64 \\
-   \cline{5-5} % specifying only the last column
-    & & & & 128 \\
-    \cline{5-5} % specifying only the last column
+    0.1 &  &  & & 128 \\
+   
     
 
-     & & & & 256 \\
     \hline
     \end{tabular}
     \caption{Hyperpameters tested in the development set.}
@@ -436,11 +433,11 @@ The process to decide the hyperparameters is simple: We defined a list of the po
 
     The optimal model consisted of the following hyperparameters:
     \begin{itemize}
-        \item Learning rate:
-        \item Number of hidden layers:
-        \item Hidden layers' size:
-        \item Dropout probability:
-        \item Batch size:
+        \item Learning rate: 0.01
+        \item Number of hidden layers: 2
+        \item Hidden layers' size: 64
+        \item Dropout probability: 0.4
+        \item Batch size: 1
     \end{itemize}
     
     The results we gain are shown in Figures \ref{fig::mlp_accuracy}, \ref{fig::mlp_loss}.
