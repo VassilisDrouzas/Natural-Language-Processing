@@ -201,7 +201,7 @@
 	
 	We create our own classifier which classifies each token by the majority label associated with it. The classifier is defined as a subclass of sklearn's classifier superclass and thus can seamlessly use it in most sklearn-provided functions such as \texttt{classification\_report()} and its implementation can be found in the \texttt{tasks.models} module.
 	
-	The results of the classifier can be found in Figure TODO. These results make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
+	The results of the classifier can be found in Table \ref{tab::ex_10_train}, \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. The results make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
 	
 	Thus, besides quantitative statistics such as categorical accuracy and f1-score, we should pay close attention to the precision and recall statistics for the more variable POS tags such as "NOUN" or "VERB" in order to properly evaluate our MLP classifier.
 	
