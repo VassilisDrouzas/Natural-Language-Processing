@@ -137,6 +137,10 @@
 	
 	Another issue we need to address before continuing is that of words being part of (depending on) other words for their POS tag. Those would be words such as "don't", "couldn't" or "you're". In the standard UPOS schema these are defined as two or more separate words, where the first is represented by its standard POS tag, and the rest as part of that tag (UPOS tag "PART"). For instance, "don't" would be split into "do" and "n't" with "AUX" and "PART" tags respectively. In our dataset, these words are represented both in the manner described above followed by the full word ("don't") tagged with the pseudo-tag "\_". We remove the latter representation from the working dataset.
 	
+	For the word embeddings we originally used a Word2Vec variant implemented in the \texttt{spacy} library called \texttt{en\_core\_web\_md}. The model seemed suitable for our needs because of the similarities in domain (pre-trained on blogs, news and comments which fits our dataset). However, it proved extremely slow and thus constrained the amount of embeddings we could reasonably procure, limiting our classifier.
+	
+	Thus we use the fasttext \texttt{cc.en.300} model. This model has a total size of 7GB which may present OOM issues in some machines, but calculates embeddings extremely fast, allowing us to augment our training set from 65,000 to 150,000 windows.
+	
 	The general algorithm to calculate the window embeddings on our dataset can be found in Algorithm \ref{al::window-embeds}. The algorithm uses a few external functions which are not described here for the sake of brevity. \texttt{get\_window()} returns the context of the word inside a sentence, including padding where needed, \texttt{embedding()} returns the word embedding for a single word and \texttt{concatenate} returns a single element from a list of elements. The rest of the functions should be self-explanatory.  Note that this algorithm does not represent the actual python implementation.
 	
 	\begin{algorithm}
@@ -247,9 +251,11 @@
 	
 	\subsubsection{Results}
 	
-	The results of our MLP classifier compared to the baseline model          mentioned above can be found in Tables \ref{tab::ex_10_train}, \    \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables.
+	The results of our MLP classifier compared to the baseline models mentioned above can be found in Tables \ref{tab::ex_10_train},    \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables.
 	
-	We note an increase in all metrics for our MLP classifier, especially in tags such as "SCONJ" (subordinating conjunction), and VERB and NOUN (which we hypothesized at the beginning of the report). The only notable exception is the "X" tag (other) which is attributed to unintelligible material, foreign words and word fragments. This is an acceptable drawback, since these are easily caught by preprocessing or weak classifiers anyway.
+	We note an increase in all metrics for our MLP classifier, especially in tags such as "SCONJ" (subordinating conjunction), and VERB and NOUN (which we hypothesized at the beginning of the report). The only exception is the "X" tag (other) which is attributed to unintelligible material, foreign words and word fragments. This is an acceptable drawback, since these are easily caught by preprocessing or weak classifiers.
+	
+	Another notable observation is the 100\% precision in all categories but "X" both by our baseline and MLP classifiers. This indicates that precision is not a significant metric in our task.
 
 	\input{output/ex_10_train.tex}
 	
@@ -259,12 +265,14 @@
 
 
 
-        \section{ Sentiment Analysis}
+     \section{Sentiment Analysis}
         
     Sentiment analysis, also known as opinion mining, is the process of analyzing text to determine the sentiment or emotional tone expressed within it. The goal of sentiment analysis is to understand the attitudes, opinions, and emotions conveyed by the text. 
 
     \subsection{Dataset}
     Here we will be working with the Cornell Movie Review dataset, which consists of 2000 movie reviews, split equally in 1000 positive and 1000 negative ones. The goal here will be to develop classifiers that will effectively understand whether a review is a positive or negative one, based on the data it has been trained on.We begin by taking a brief look into our dataset.
+    
+    
     \subsubsection{Average Document Length }
 
     The average document length in words and characters is:
@@ -294,9 +302,7 @@
      The english stopwords is a package of 179 words that in general, would not help in a sentiment analysis problem. But, since they include terms that are negative, removing them could prove harmful for our case, since we are dealing with a sentiment analysis problem.
 
     e.g. imagine the phrase "I didn't like the film" to end up "like film". Disastrous, right?
-
-    \
-    
+   
     So, the plan is to remove all the stop words that include negative meaning before the preprocessing.
     The stop words that we decided to keep in the text are shown in Figure \ref{fig::to_keep}.
 
@@ -383,9 +389,6 @@
     The best hyperparameters were the following:
     C= 10, penalty= ‘l1’, solver = ‘liblinear’.
     
-    \ 
-
-    \ 
     Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Figure \ref{fig::LR_metrics} .
 
     \begin{figure}
@@ -400,7 +403,7 @@
 
     First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying fit\_transform() and transform() to the training and development 1-hot vectors respectively.
     
-    Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 50. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-stats}).
+    Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 50. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-hyper}).
 
   
 
@@ -425,7 +428,7 @@
     \hline
     \end{tabular}
     \caption{Hyperpameters tested in the development set.}
-    \label{tab::ex-9-stats}
+    \label{tab::ex-9-hyper}
 \end{table}
 
 The process to decide the hyperparameters is simple: We defined a list of the possible hyperparameter combinations and for each one we ran the model. After that, we evaluated on the development set and we kept the model with the best development accuracy.
@@ -456,10 +459,6 @@ The process to decide the hyperparameters is simple: We defined a list of the po
 	    \label{fig::mlp_loss}
 	\end{figure}
 
-
-
-   
-
     Next, we provide the metrics (Precision,Recall, F1 score and the AUC scores) for training, development and test subsets in Figure \ref{fig::mlp_metrics}.
 
     \begin{figure}
@@ -468,10 +467,6 @@ The process to decide the hyperparameters is simple: We defined a list of the po
 	    \caption{Metrics for the MLP classifier for both classes for the training, development and test sets.}
 	    \label{fig::mlp_metrics}
     \end{figure}
-
-    
-
-
 
     Finally,  the Macro-averaged metrics (averaging the corresponding scores of the previous bullet over the classes) for the training, development and test subsets, are shown in Figure \ref{fig::mlp_macro_metrics}.
 
