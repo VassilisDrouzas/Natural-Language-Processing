@@ -403,7 +403,7 @@
 
     First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying fit\_transform() and transform() to the training and development 1-hot vectors respectively.
     
-    Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 15. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-hyper}).
+    Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 50 and early stopping was used. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-hyper}).
 
   
 
