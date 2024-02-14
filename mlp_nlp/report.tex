@@ -382,12 +382,12 @@
     Before applying Logistic Regression, we will perform a grid search to find the optimal parameters to run the classifier. The parameters we tried are the following:
     \begin{itemize}
     \item{Solver: We tested ‘liblinear’ and ‘saga’ solvers}
-    \item{Penalty: We tested ‘l1’, ‘l2’, ‘elasticnet’ reguralization penalties}
+    \item{Penalty: We tested ‘l1’, ‘l2’ reguralization penalties}
     \item{C: We tested values of 0.001, 0.01, 0.1, 1 and 10 (inverse of regularization strength)}
     \end{itemize}
 
     The best hyperparameters were the following:
-    C= 10, penalty= ‘l1’, solver = ‘liblinear’.
+    C= 1, penalty= ‘l2’, solver = ‘liblinear’.
     
     Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Figure \ref{fig::LR_metrics} .
 
@@ -433,11 +433,11 @@ The process to decide the hyperparameters is simple: We defined a list of the po
 
     The optimal model consisted of the following hyperparameters:
     \begin{itemize}
-        \item Learning rate: 0.01
-        \item Number of hidden layers: 2
+        \item Learning rate: 0.1
+        \item Number of hidden layers: 1
         \item Hidden layers' size: 64
         \item Dropout probability: 0.4
-        \item Batch size: 1
+        \item Batch size: 64
     \end{itemize}
     
     The results we gain are shown in Figures \ref{fig::mlp_accuracy}, \ref{fig::mlp_loss}.
@@ -469,7 +469,7 @@ The process to decide the hyperparameters is simple: We defined a list of the po
 
     \begin{figure}
 	    \centering
-            \includegraphics[width=4cm]{"MLP_Macro_metrics".png}
+            \includegraphics[width=11cm]{"MLP_Macro_metrics".png}
 	    \caption{Macro-Metrics for the MLP classifier for both classes for the training, development and test sets.}
 	    \label{fig::mlp_macro_metrics}
     \end{figure}
