@@ -4,11 +4,11 @@ from sklearn.utils.validation import check_is_fitted
 
 def _record_label(label_dict: dict, word: str, label: str) -> None:
     """
-   Helper function to record the label count for a given word.
-   :param label_dict: Dictionary to store label counts for each word.
-   :param word: The word for which the label count is recorded.
-   :param label: The label associated with the word.
-   """
+    Helper function to record the label count for a given word.
+    :param label_dict: Dictionary to store label counts for each word.
+    :param word: The word for which the label count is recorded.
+    :param label: The label associated with the word.
+    """
     if word in label_dict and label in label_dict[word]:
         label_dict[word][label] += 1
     else:
@@ -20,6 +20,7 @@ class BaselineLabelClassifier(ClassifierMixin, BaseEstimator):
     A sklearn majority classifier which classifies a word with the majority label associated with it.
     Unknown words are assigned the globally most likely label.
     """
+
     def __init__(self):
         self.word_pos_dict = {}
         self.most_popular_pos_tag = None
@@ -44,7 +45,9 @@ class BaselineLabelClassifier(ClassifierMixin, BaseEstimator):
             else:
                 all_labels_dict[label] = 1
 
-        self.most_popular_pos_tag = max(all_labels_dict, key=all_labels_dict.get)
+        self.most_popular_pos_tag = max(
+            all_labels_dict, key=all_labels_dict.get
+        )
 
         for word in inter_dict.keys():
             self.word_pos_dict = max(word, key=word.get)
