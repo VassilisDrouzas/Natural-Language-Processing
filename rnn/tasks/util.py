@@ -112,3 +112,29 @@ def stats_all_splits(model, transform_output_func, x_train, x_valid, x_test, y_t
     test_df["split"] = "test"
 
     return pd.concat([train_df, valid_df, test_df])
+    
+
+
+class Metrics(tf.keras.callbacks.Callback):
+    def __init__(self, valid_data):
+        super(Metrics, self).__init__()
+        self.validation_data = valid_data
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        val_predict = np.argmax(self.model.predict(self.validation_data[0]), -1)
+        val_targ = self.validation_data[1]
+        val_targ = tf.cast(val_targ,dtype=tf.float32)
+        if len(val_targ.shape) == 2 and val_targ.shape[1] != 1:
+          val_targ = np.argmax(val_targ, -1)      
+        
+
+        _val_f1 = metrics.f1_score(val_targ, val_predict,average="weighted", zero_division=0)
+        _val_recall = metrics.recall_score(val_targ, val_predict,average="weighted", zero_division=0)
+        _val_precision = metrics.precision_score(val_targ, val_predict,average="weighted", zero_division=0)
+
+        logs['val_f1'] = _val_f1
+        logs['val_recall'] = _val_recall
+        logs['val_precision'] = _val_precision
+        print(" — val_f1: %f — val_precision: %f — val_recall: %f" % (_val_f1, _val_precision, _val_recall))
+        return
