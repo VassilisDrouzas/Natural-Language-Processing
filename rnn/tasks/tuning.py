@@ -24,7 +24,7 @@ def tune_self_attention_gru(
 ) -> keras.Model:
     """
     Build and compile a Keras model with bidirectional GRU layers and self-attention mechanism.
-    
+
     :param hp: Hyperparameters for Keras Tuner.
     :param input_layers: List of input layers for the model.
     :param output_size: Output size of the model.
@@ -53,9 +53,14 @@ def tune_self_attention_gru(
     if use_layer_norm:
         variational_dropout = 0
 
-    for _ in range(hp.Int(name="bidirectional-layers", 
-                          min_value=bidirect_num_min, 
-                          max_value=bidirect_num_max) - 1):
+    for _ in range(
+        hp.Int(
+            name="bidirectional-layers",
+            min_value=bidirect_num_min,
+            max_value=bidirect_num_max,
+        )
+        - 1
+    ):
         model.add(
             Bidirectional(
                 GRU(
@@ -82,19 +87,23 @@ def tune_self_attention_gru(
     )
 
     # Self-attention
-    model.add(
-        SelfAttention(
-            mlp_layers=hp.Int(
-                "self-attention-layers",
-                min_value=self_attention_num_min,
-                max_value=self_attention_num_max,
-            ),
-            units=hp.Int("self-attention-neurons", 
-                         min_value=self_attention_neurons_min, 
-                         max_value=self_attention_neurons_max,
-                         step=self_attention_neurons_step),
-            dropout_rate=0.33
+
+    mlp_layers = hp.Int(
+        "self-attention-layers",
+        min_value=self_attention_num_min,
+        max_value=self_attention_num_max,
+    )
+    mlp_units = [
+        hp.Int(
+            "self-attention-neurons",
+            min_value=self_attention_neurons_min,
+            max_value=self_attention_neurons_max,
+            step=self_attention_neurons_step,
         )
+        for i in range(mlp_layers)
+    ]
+    model.add(
+        SelfAttention(mlp_layers=mlp_layers, units=mlp_units, dropout_rate=0.33)
     )
 
     # Output layer

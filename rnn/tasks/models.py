@@ -80,13 +80,13 @@ class BaselineLabelClassifier(ClassifierMixin, BaseEstimator):
 
 class SelfAttention(keras.layers.Layer):
     def __init__(
-        self, mlp_layers=0, units=0, dropout_rate=0, return_attention=False, **kwargs
+        self, mlp_layers=0, units=[], dropout_rate=0, return_attention=False, **kwargs
     ):
         """
         Self-attention layer for a Keras model.
         
         :param mlp_layers: Number of MLP layers in the attention mechanism.
-        :param units: Number of units in the MLP layers.
+        :param units: A list containing the number of units in each MLP layer.
         :param dropout_rate: Dropout rate applied to the MLP layers.
         :param return_attention: Whether to return the attention weights along with the output.
         :param kwargs: Additional keyword arguments.
@@ -105,7 +105,7 @@ class SelfAttention(keras.layers.Layer):
         """
         mlp = Sequential()
         for i in range(self.mlp_layers):
-            mlp.add(Dense(self.mlp_units, activation="relu"))
+            mlp.add(Dense(self.mlp_units[i], activation="relu"))
             mlp.add(Dropout(self.dropout_rate))
         mlp.add(Dense(1))
         return mlp
