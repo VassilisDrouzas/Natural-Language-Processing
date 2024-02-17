@@ -1,6 +1,11 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted
 
+import tensorflow as tf
+from tensorflow import keras
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+
 
 def _record_label(label_dict: dict, word: str, label: str) -> None:
     """
@@ -70,3 +75,60 @@ class BaselineLabelClassifier(ClassifierMixin, BaseEstimator):
             else:
                 response.append(self.most_popular_pos_tag)
         return response
+    
+
+
+class SelfAttention(keras.layers.Layer):
+    def __init__(
+        self, mlp_layers=0, units=0, dropout_rate=0, return_attention=False, **kwargs
+    ):
+        """
+        Self-attention layer for a Keras model.
+        
+        :param mlp_layers: Number of MLP layers in the attention mechanism.
+        :param units: Number of units in the MLP layers.
+        :param dropout_rate: Dropout rate applied to the MLP layers.
+        :param return_attention: Whether to return the attention weights along with the output.
+        :param kwargs: Additional keyword arguments.
+        """
+        super(SelfAttention, self).__init__(**kwargs)
+        self.mlp_layers = mlp_layers
+        self.mlp_units = units
+        self.return_attention = return_attention
+        self.dropout_rate = dropout_rate
+        self.attention_mlp = self.build_mlp()
+
+    def build_mlp(self):
+        """
+        Build the MLP layers for the attention mechanism.
+        :return: The MLP model.
+        """
+        mlp = Sequential()
+        for i in range(self.mlp_layers):
+            mlp.add(Dense(self.mlp_units, activation="relu"))
+            mlp.add(Dropout(self.dropout_rate))
+        mlp.add(Dense(1))
+        return mlp
+
+    def call(self, x, mask=None):
+        """
+        Call function for the self-attention layer.
+        :param x: Input tensor.
+        :param mask: Mask tensor for sequence padding.
+        :return: Output tensor with attention weights if return_attention is True.
+        """
+        a = self.attention_mlp(x)
+
+        if mask is not None:
+            mask = tf.keras.backend.cast(mask, tf.keras.backend.floatx())
+            a -= 100000.0 * (1.0 - mask)
+
+        a = tf.keras.backend.expand_dims(tf.keras.backend.softmax(a, axis=-1))
+        weighted_input = x * a
+        result = tf.keras.backend.sum(weighted_input, axis=1)
+
+        if self.return_attention:
+            return [result, a]
+        return result
+
+
