@@ -18,6 +18,7 @@ def tune_self_attention_gru(
     self_attention_neurons_min: int,
     self_attention_neurons_max: int,
     self_attention_neurons_step: int,
+    lr_values: list[float],
     metrics: list,
     loss: str,
     gru_size: int = 300,
@@ -35,6 +36,7 @@ def tune_self_attention_gru(
     :param self_attention_neurons_min: Minimum number of neurons in self-attention layers.
     :param self_attention_neurons_max: Maximum number of neurons in self-attention layers.
     :param self_attention_neurons_step: Step size for the number of neurons in self-attention layers.
+    :param lr_values: A list of candidate learning rate values.
     :param metrics: List of evaluation metrics.
     :param loss: Loss function for model training.
     :param gru_size: Size of the GRU layers.
@@ -95,7 +97,7 @@ def tune_self_attention_gru(
     )
     mlp_units = [
         hp.Int(
-            "self-attention-neurons",
+            "self-attention-neurons-layer-" + str(i),
             min_value=self_attention_neurons_min,
             max_value=self_attention_neurons_max,
             step=self_attention_neurons_step,
@@ -113,7 +115,7 @@ def tune_self_attention_gru(
         model.add(Dense(output_size, activation="softmax"))
 
     # Model compilation
-    hp_learning_rate = hp.Choice("learning_rate", values=[1e-3, 1e-4])
+    hp_learning_rate = hp.Choice("learning_rate", values=lr_values)
     model.compile(
         loss=loss,
         optimizer=Adam(learning_rate=hp_learning_rate),
