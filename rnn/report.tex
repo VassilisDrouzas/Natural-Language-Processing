@@ -1,0 +1,481 @@
+\documentclass[10pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[greek, english]{babel}
+\usepackage{alphabeta}
+\usepackage{libertine}
+\usepackage{graphicx}
+\usepackage[backend=biber]{biblatex}
+\usepackage[table]{xcolor}
+\usepackage{mathptmx} % Times New Roman
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{mathtools}
+\usepackage{subcaption} %for subfigures
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	filecolor=magenta,      
+	urlcolor=blue
+}
+
+
+\pagenumbering{arabic}
+\graphicspath{ {./output/}{./images/} }
+\addbibresource{refs.bib}
+
+\def\code#1{\texttt{#1}}
+
+\title{\Huge Text Analytics: 2nd Assignment}
+
+\author{\LARGE Tsirmpas Dimitris\\\LARGE Drouzas Vasilis}
+
+
+\begin{document}
+	
+	\begin{titlepage}
+		\maketitle
+		\begin{center}
+			
+			\large Athens University of Economics and Business
+			
+			\large MSc in Data Science
+			
+		\end{center}
+		
+	\end{titlepage}
+	
+	\tableofcontents
+	\newpage	
+	
+	\section{Introduction}
+	
+	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of MLP models for sentiment analysis and POS tagging tasks.
+	
+	This report and its associated code, analysis and results were conducted by the two authors. Specifically, the sentiment analysis task was performed by Drouzas Vasilis, and the POS-tagging task by Tsirmpas Dimitris. This report was written by both authors.
+	
+	Note that due to the relative custom code complexity, most of the code used in this section was developed and imported from python source files located in the \texttt{tasks} module. In-depth documentation and implementation details can be found in these files. 
+	
+	
+	\section{POS Tagging}
+	
+	POS tagging is a language processing task where words in a given text are assigned specific grammatical categories, such as nouns, verbs, or adjectives. The objective is to analyze sentence structure. 
+	
+	In this section we describe how we can leverage pre-trained word embeddings to create a context-aware MLP classifier.
+	
+	
+	\subsection{Dataset}
+	
+	Acquiring and preprocessing our data with the goal of eventually acquiring a sufficient representation of our text is the most difficult and time-consuming task. We thus split it in distinct phases:
+	
+	\begin{itemize}
+		\item Original dataset acquisition and parsing
+		\item Qualitative analysis and preprocessing
+		\item Transformation necessary for the NLP task
+	\end{itemize}
+	
+	Each of these distinct steps are individually analyzed below.
+	
+	
+	\subsubsection{Acquisition}
+	
+	We select the \href{https://universaldependencies.org/treebanks/en_ewt/index.html}{English EWT-UD} tree, which is the largest currently supported collection for POS tagging tasks for the English language.
+	
+	This corpus contains 16622 sentences, 251492 tokens and 254820 syntactic words, as well as 926 types of words that contain both letters and punctuation, such as 's, n't, e-mail, Mr., ’s, etc). This is markedly a much higher occurrence than its siblings, and therefore may lead to a slightly more difficult task.
+	
+	The dataset is made available in \texttt{conllu} format, which we parse using the recommended \texttt{conllu} python library. We create a dataframe for every word and its corresponding POS tag and link words belonging to the same sentences by a unique sentence ID. The data are already split to training, validation and test sets, thus our own sets correspond to the respective split files.
+	
+	We are interested in the UPOS (Universal Part of Speech) tags for English words.
+	
+	\subsubsection{Qualitative Analysis}
+	
+	Our training vocabulary is comprised of $16654$ words. We include qualitative statistics on the sentences of our dataset in Tables \ref{tab::ex-10-sent-stats} and \ref{tab::ex-10-stats}. The splits are explicitly mentioned separately because the splitting was performed by the dataset authors and not by random sampling. We would therefore like to confirm at a glance whether their data are similar.
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Mean} & \cellcolor{blue!25}\textbf{Std} &
+			\cellcolor{blue!25}\textbf{Min} & \cellcolor{blue!25}\textbf{25\%} & \cellcolor{blue!25}\textbf{50\%} &
+			\cellcolor{blue!25}\textbf{75\%} &
+			\cellcolor{blue!25}\textbf{Max} \\
+			\hline
+			Training & 16.31 & 12.4 & 1  & 7 & 14 & 23 & 159 \\\hline
+			Validation  & 12.56 & 10.41 & 1 & 5 & 10 & 17 & 75  \\\hline
+			Test & 12.08 & 10.6  & 1 & 4 & 9 & 17 & 81
+			\\\hline
+		\end{tabular}
+		\centering
+		\caption{Summary and order statistics for the number of words in the sentences of each data split.}
+		\label{tab::ex-10-sent-stats}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
+			\cellcolor{blue!25}\textbf{Total Sentence Count}\\
+			\hline
+			Training & 204614 & 12544 \\\hline
+			Validation & 25152  & 2001 \\\hline
+			Test & 25096 & 2077 \\\hline
+		\end{tabular}
+		\centering
+		\caption{Total text volume of each data split.}
+		\label{tab::ex-10-stats}
+	\end{table}
+	
+	
+	\subsubsection{Preprocessing}
+	
+	Given the nature of our task we can not implement preprocessing steps such as removing punctuation marks, stopwords or augmenting the dataset. Thus, the only meaningful preprocessing at this stage would be converting the words to lowercase. We believe that the context of each word will carry enough information to distinguish its POS tag regardless of case. 
+	
+	Another issue we need to address before continuing is that of words being part of (depending on) other words for their POS tag. Those would be words such as "don't", "couldn't" or "you're". In the standard UPOS schema these are defined as two or more separate words, where the first is represented by its standard POS tag, and the rest as part of that tag (UPOS tag "PART"). For instance, "don't" would be split into "do" and "n't" with "AUX" and "PART" tags respectively. In our dataset, these words are represented both in the manner described above followed by the full word ("don't") tagged with the pseudo-tag "\_". We remove the latter representation from the working dataset.
+	
+	For the word embeddings we originally used a Word2Vec variant implemented in the \texttt{spacy} library called \texttt{en\_core\_web\_md}. The model seemed suitable for our needs because of the similarities in domain (pre-trained on blogs, news and comments which fits our dataset). However, it proved extremely slow and thus constrained the amount of embeddings we could reasonably procure, limiting our classifier.
+	
+	Thus we use the fasttext \texttt{cc.en.300} model. This model has a total size of 7GB which may present OOM issues in some machines, but calculates embeddings extremely fast, allowing us to augment our training set from 65,000 to 150,000 windows.
+	
+	The general algorithm to calculate the window embeddings on our dataset can be found in Algorithm \ref{al::window-embeds}. The algorithm uses a few external functions which are not described here for the sake of brevity. \texttt{get\_window()} returns the context of the word inside a sentence, including padding where needed, \texttt{embedding()} returns the word embedding for a single word and \texttt{concatenate} returns a single element from a list of elements. The rest of the functions should be self-explanatory.  Note that this algorithm does not represent the actual python implementation.
+	
+	\begin{algorithm}
+		\caption{Window Embedding creation algorithm from raw-text sentences.} 
+		\label{al::window-embeds}
+		
+		\hspace*{\algorithmicindent} \textbf{Input} sentences: a list of sentences \\
+		\hspace*{\algorithmicindent} \textbf{Output} tuple(windows, targets): the window embeddings and the POS tag corresponding to the median word of each window
+		\begin{algorithmic}[1]	
+			\State windows = list()
+			\State targets = list()
+			
+			\State % whitespace
+			
+			\For {sentence in sentences}
+			
+			\For {word in sentence}
+			\State window = get\_window(word, sentence)
+			\State target = get\_tag(word)
+			
+			\State windows.add(window)
+			\State targets.add(target)
+			\EndFor
+			
+			\EndFor
+			
+			\State % whitespace
+			
+			\State window\_embeddings = list()
+			\For{window in windows}
+			
+			\State word\_embeddings = list()
+			
+			
+			\For{word in window}
+			
+			\If{word is PAD\_TOKEN}
+			\State word\_embeddings.add(zeros(embedding\_size))
+			\Else
+			\State word\_embeddings.add(embedding(word))
+			\EndIf
+			
+			\EndFor
+			
+			\State window\_embedding = concatenate(word\_embeddings)
+			\State window\_embeddings.add(window\_embedding)
+			\EndFor
+			
+			\State % whitespace
+			
+			\State \Return window\_embeddings, one\_hot(targets)
+			
+		\end{algorithmic} 
+	\end{algorithm}
+	
+	
+	\subsection{Baseline Classifier}
+	
+	We create our own classifier which classifies each token by the majority label associated with it. The classifier is defined as a subclass of sklearn's classifier superclass and thus can seamlessly use it in most sklearn-provided functions such as \texttt{classification\_report()} and its implementation can be found in the \texttt{tasks.models} module.
+	
+	The results of the classifier can be found in Table \ref{tab::ex_10_train}, \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. The results make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
+	
+	Thus, besides quantitative statistics such as categorical accuracy and f1-score, we should pay close attention to the precision and recall statistics for the more variable POS tags such as "NOUN" or "VERB" in order to properly evaluate our MLP classifier.
+	
+	
+	\subsection{MLP Classifier}
+	
+	\subsubsection{Hyper-parameter tuning}
+	
+	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model.
+	
+	The parameter search consists of:
+	\begin{itemize}
+		\item The depth of the model (the number of layers)
+		\item The height of the model (the number of parameters by layer) 
+		\item The learning rate
+	\end{itemize}
+	
+	
+	The parameter search does NOT consist of:
+	\begin{itemize}
+		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the trade-off between training time and overfit avoidance
+		\item Activation functions, since they rarely significantly influence the model's performance
+	\end{itemize}
+	
+	With this scheme we hope to maximize the area and granularity of our search to the hyper-parameters that are most likely to significantly influence the final results.
+	
+	We implement early stopping and set a maximum iteration limit of $70$. We assume that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times since this operation is very computationally heavy. We don not yet aim to create the best classifier, so slightly suboptimal weights are not a problem for the purposes of the hyperparameter search.
+	We use a relatively very large batch size to improve training times since this operation is very computationally heavy. We don't yet aim to create the best classifier, so slightly suboptimal weights are not a problem for the purposes of the hyperparameter search.
+	
+	
+	\subsubsection{Training}
+	
+	We now re-train our model with a much smaller batch size and keep track of the training history and best weights by validation loss. 
+	
+	Unfortunately, the different batch size means we can not rely on the hyper parameter search to get an estimation of training epochs. Thus, we rely on early-stopping on the validation data to ensure our model does not overfit as a result of training time. 
+	
+	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications.
+	
+	This phenomenon is demonstrated in Figure \ref{fig::ex_10_fit}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=10cm]{"ex_2_fit.png"}
+		\caption{Loss and accuracy on the training and validation sets depending on the number of epochs.}
+		\label{fig::ex_10_fit}
+	\end{figure}
+	
+	\subsubsection{Results}
+	
+	The results of our MLP classifier compared to the baseline models mentioned above can be found in Tables \ref{tab::ex_10_train},    \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	
+	We note an increase in all metrics for our MLP classifier, especially in tags such as "SCONJ" (subordinating conjunction), and VERB and NOUN (which we hypothesized at the beginning of the report). The only exception is the "X" tag (other) which is attributed to unintelligible material, foreign words and word fragments. This is an acceptable drawback, since these are easily caught by preprocessing or weak classifiers.
+	
+	Another notable observation is the 100\% precision in all categories but "X" both by our baseline and MLP classifiers. This indicates that precision is not a significant metric in our task.
+	
+	\input{output/ex_2_train.tex}
+	
+	\input{output/ex_2_valid.tex}
+	
+	\input{output/ex_2_test.tex}
+	
+	
+	
+	\section{Sentiment Analysis}
+	
+	Sentiment analysis, also known as opinion mining, is the process of analyzing text to determine the sentiment or emotional tone expressed within it. The goal of sentiment analysis is to understand the attitudes, opinions, and emotions conveyed by the text. 
+	
+	\subsection{Dataset}
+	Here we will be working with the \href{http://www.cs.cornell.edu/people/pabo/movie-review-data/}{Cornell Movie Review dataset}, which consists of 2000 movie reviews, split equally in 1000 positive and 1000 negative ones. The goal here will be to develop classifiers that will effectively understand whether a review is a positive or negative one, based on the data it has been trained on.We begin by taking a brief look into our dataset.
+	
+	
+	\subsubsection{Average Document Length }
+	
+	The average document length in words and characters is:
+	\begin{itemize}
+		\item Average number of words: 746.3405
+		\item Average number of characters: 3893.002
+	\end{itemize}
+	
+	
+	
+	
+	\subsubsection{Pre-processing}
+	
+	For demonstration reasons, we start by printing the 20 most frequent words in the text, in Figure \ref{fig::20_common}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=4cm]{"20\_most\_common_words".png}
+		\caption{The 20 most common words in the text, along with their occurences.}
+		\label{fig::20_common}
+	\end{figure}
+	
+	
+	
+	Most of these words are actually stop words. As in most text classification problems, we would typically need to remove the stop words of the text.
+	
+	The english stopwords is a package of 179 words that in general, would not help in a sentiment analysis problem. But, since they include terms that are negative, removing them could prove harmful for our case, since we are dealing with a sentiment analysis problem.
+	
+	e.g. imagine the phrase "I didn't like the film" to end up "like film". Disastrous, right?
+	
+	So, the plan is to remove all the stop words that include negative meaning before the preprocessing.
+	The stop words that we decided to keep in the text are shown in Figure \ref{fig::to_keep}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=4cm]{"to_keep_words".png}
+		\caption{The 'important' words we decided to keep for this sentiment analysis problem.}
+		\label{fig::to_keep}
+	\end{figure}
+	
+	Moving on to the pre-processing task, the steps performed are the following:
+	\begin{itemize}
+		\item{ Combination to a single document.}
+		\item{ Convertion to lowercase.}
+		\item{Lemmatization and stop words extraction.}
+		\item{ Punctuation removal.}
+		\item{ Number removal.}
+		\item{Single characters removal.}
+		\item{ Converting multiple spaces to single ones.}
+	\end{itemize}
+	
+	\subsubsection{Splitting the dataset}
+	We decided to split the (processed) dataset into the training set (70\%), development set (15\%) and test set (15\%). The sizes of each set are shown in Table \ref{tab::ex-9-stats}.
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
+			\cellcolor{blue!25}\textbf{Total Document Count}\\
+			\hline
+			Training & 36624 & 1400 \\\hline
+			Validation & 16948  & 300 \\\hline
+			Test & 16780 & 300 \\\hline
+		\end{tabular}
+		\centering
+		\caption{Total text volume of each data split.}
+		\label{tab::ex-9-stats}
+	\end{table}
+	
+	
+	\subsubsection{TF-IDF}
+	We used the unigram and bi-gram TF-IDF features, defining the maximum number of features to 5000. The shapes of the data are as follows:
+	
+	
+	\begin{itemize}
+		\item Training data: (1400, 5000)
+		\item Development data: (300, 5000)
+		\item Test data: (300,5000)
+	\end{itemize}
+	
+	\subsubsection{Feature selection with SVD}
+	We performed dimensionality reduction with the \texttt{TruncatedSVD()} method, reducing the number of features from 5000 to 500. The new shapes are:
+	
+	
+	\begin{itemize}
+		\item Training data: (1400, 500)
+		\item Development data: (300, 500)
+		\item Test data: (300, 500)
+	\end{itemize}
+	
+	\subsection{Classifiers}
+	\subsubsection{DummyClassifier}
+	DummyClassifier makes predictions that ignore the input features. This classifier serves as a simple baseline to compare against other more complex classifiers.The strategy to generate predictions was set to ‘most\_frequent’,  meaning that the predict method always returns the most frequent class label. The results of this classifier are demonstrated in Figure \ref{fig::dummy_metrics}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=8cm]{"DummyClf_metrics".png}
+		\caption{Classification results of DummyClassifier for training,test and validation sets.}
+		\label{fig::dummy_metrics}
+	\end{figure}
+	
+	
+	As expected, the results are poor since the decision of the classifier depends exclusively only the majority class.
+	
+	\subsubsection{Logistic Regression}
+	Logistic Regression is a statistical method used for binary classification tasks, where the output variable takes only two possible outcomes.
+	Before applying Logistic Regression, we will perform a grid search to find the optimal parameters to run the classifier. The parameters we tried are the following:
+	\begin{itemize}
+		\item{Solver: We tested ‘liblinear’ and ‘saga’ solvers}
+		\item{Penalty: We tested ‘l1’, ‘l2’ reguralization penalties}
+		\item{C: We tested values of 0.001, 0.01, 0.1, 1 and 10 (inverse of regularization strength)}
+	\end{itemize}
+	
+	The best hyperparameters were the following:
+	C= 1, penalty= ‘l2’, solver = ‘liblinear’.
+	
+	Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Figure \ref{fig::LR_metrics} .
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=8cm]{"LRClf_metrics".png}
+		\caption{Metrics of the Logistic Regression on the training, test and development sets.}
+		\label{fig::LR_metrics}
+	\end{figure}
+	
+	
+	\subsubsection{Our custom MLP classifier}
+	
+	First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying fit\_transform() and transform() to the training and development 1-hot vectors respectively.
+	
+	Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 50 and early stopping was used. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-hyper}).
+	
+	
+	
+	
+	\begin{table}
+		\centering
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\rowcolor{blue!25}\textbf{Learning rate} & \cellcolor{blue!25}\textbf{\#Hidden layers} & \cellcolor{blue!25}\textbf{Hidden layers size} & \cellcolor{blue!25}\textbf{Dropout probability} & \cellcolor{blue!25}\textbf{Batch size}\\
+			\hline
+			0.001 & 1 & 64 & 0.4 & 1\\
+			\hline
+			0.01 & 2 & 128 & 0.5 & 64\\
+			\hline
+			0.1 &  &  & & 128 \\
+			
+			
+			
+			\hline
+		\end{tabular}
+		\caption{Hyperpameters tested in the development set.}
+		\label{tab::ex-9-hyper}
+	\end{table}
+	
+	The process to decide the hyperparameters is simple: We defined a list of the possible hyperparameter combinations and for each one we ran the model. After that, we evaluated on the development set and we kept the model with the best development accuracy.
+	
+	
+	The optimal model consisted of the following hyperparameters:
+	\begin{itemize}
+		\item Learning rate: 0.1
+		\item Number of hidden layers: 1
+		\item Hidden layers' size: 64
+		\item Dropout probability: 0.4
+		\item Batch size: 64
+	\end{itemize}
+	
+	The results we gain are shown in Figures \ref{fig::mlp_accuracy}, \ref{fig::mlp_loss}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_accuracy".png}
+		\caption{MLP accuracy as a function of epochs.}
+		\label{fig::mlp_accuracy}
+	\end{figure}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_loss".png}
+		\caption{MLP loss as a function of epochs.}
+		\label{fig::mlp_loss}
+	\end{figure}
+	
+	Next, we provide the metrics (Precision,Recall, F1 score and the AUC scores) for training, development and test subsets in Figure \ref{fig::mlp_metrics}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_metrics".png}
+		\caption{Metrics for the MLP classifier for both classes for the training, development and test sets.}
+		\label{fig::mlp_metrics}
+	\end{figure}
+	
+	Finally,  the Macro-averaged metrics (averaging the corresponding scores of the previous bullet over the classes) for the training, development and test subsets, are shown in Figure \ref{fig::mlp_macro_metrics}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_Macro_metrics".png}
+		\caption{Macro-Metrics for the MLP classifier for both classes for the training, development and test sets.}
+		\label{fig::mlp_macro_metrics}
+	\end{figure}
+	
+	
+	
+	\printbibliography
+	
+\end{document}
