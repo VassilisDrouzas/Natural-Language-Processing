@@ -118,6 +118,8 @@ class SelfAttention(keras.layers.Layer):
         :return: Output tensor with attention weights if return_attention is True.
         """
         a = self.attention_mlp(x)
+        print(a.shape)
+        a = tf.squeeze(a, axis=2)
 
         if mask is not None:
             mask = tf.keras.backend.cast(mask, tf.keras.backend.floatx())
