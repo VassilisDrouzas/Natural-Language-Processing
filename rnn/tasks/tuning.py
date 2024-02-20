@@ -61,7 +61,6 @@ def tune_self_attention_gru(
             min_value=bidirect_num_min,
             max_value=bidirect_num_max,
         )
-        - 1
     ):
         model.add(
             Bidirectional(
@@ -77,16 +76,6 @@ def tune_self_attention_gru(
             model.add(LayerNormalization())
         else:
             model.add(Dropout(0.33))
-
-    model.add(
-        Bidirectional(
-            GRU(
-                gru_size,
-                return_sequences=False,
-                recurrent_dropout=variational_dropout,
-            )
-        )
-    )
 
     # Self-attention
 

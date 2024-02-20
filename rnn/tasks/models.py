@@ -50,9 +50,7 @@ class BaselineLabelClassifier(ClassifierMixin, BaseEstimator):
             else:
                 all_labels_dict[label] = 1
 
-        self.most_popular_pos_tag = max(
-            all_labels_dict, key=all_labels_dict.get
-        )
+        self.most_popular_pos_tag = max(all_labels_dict, key=all_labels_dict.get)
 
         for word in inter_dict.keys():
             self.word_pos_dict = max(word, key=word.get)
@@ -75,16 +73,20 @@ class BaselineLabelClassifier(ClassifierMixin, BaseEstimator):
             else:
                 response.append(self.most_popular_pos_tag)
         return response
-    
 
 
 class SelfAttention(keras.layers.Layer):
     def __init__(
-        self, mlp_layers=0, units=[], dropout_rate=0, return_attention=False, **kwargs
+        self,
+        mlp_layers=0,
+        units=[],
+        dropout_rate=0,
+        return_attention=False,
+        **kwargs
     ):
         """
         Self-attention layer for a Keras model.
-        
+
         :param mlp_layers: Number of MLP layers in the attention mechanism.
         :param units: A list containing the number of units in each MLP layer.
         :param dropout_rate: Dropout rate applied to the MLP layers.
@@ -118,19 +120,19 @@ class SelfAttention(keras.layers.Layer):
         :return: Output tensor with attention weights if return_attention is True.
         """
         a = self.attention_mlp(x)
-        print(a.shape)
-        a = tf.squeeze(a, axis=2)
+        a = tf.keras.backend.squeeze(a, axis=-1)
 
         if mask is not None:
             mask = tf.keras.backend.cast(mask, tf.keras.backend.floatx())
             a -= 100000.0 * (1.0 - mask)
 
-        a = tf.keras.backend.expand_dims(tf.keras.backend.softmax(a, axis=-1))
-        weighted_input = x * a
-        result = tf.keras.backend.sum(weighted_input, axis=1)
+        a = tf.keras.backend.expand_dims(a, axis=-1)  # Reshape to (None, 1, 1)
+        a = tf.keras.backend.softmax(a, axis=1)  # Softmax along axis 1
+
+        # Adjust the axis for batch_dot to match the reshaped attention weights
+        weighted_input = tf.keras.backend.batch_dot(a, x, axes=(1, 1))
+        result = tf.keras.backend.squeeze(weighted_input, axis=1)
 
         if self.return_attention:
             return [result, a]
         return result
-
-
