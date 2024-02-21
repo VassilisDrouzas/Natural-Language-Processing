@@ -56,18 +56,16 @@
 	
 	\section{Introduction}
 	
-	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of MLP models for sentiment analysis and POS tagging tasks.
+	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of RNN models for sentiment analysis and POS tagging tasks.
 	
 	This report and its associated code, analysis and results were conducted by the two authors. Specifically, the sentiment analysis task was performed by Drouzas Vasilis, and the POS-tagging task by Tsirmpas Dimitris. This report was written by both authors.
-	
-	Note that due to the relative custom code complexity, most of the code used in this section was developed and imported from python source files located in the \texttt{tasks} module. In-depth documentation and implementation details can be found in these files. 
 	
 	
 	\section{POS Tagging}
 	
 	POS tagging is a language processing task where words in a given text are assigned specific grammatical categories, such as nouns, verbs, or adjectives. The objective is to analyze sentence structure. 
 	
-	In this section we describe how we can leverage pre-trained word embeddings to create a context-aware MLP classifier.
+	In this section we describe how we can leverage pre-trained word embeddings to create a context-aware RNN classifier.
 	
 	
 	\subsection{Dataset}
@@ -145,16 +143,14 @@
 	
 	We create our own classifier which classifies each token by the majority label associated with it. The classifier is defined as a subclass of sklearn's classifier superclass and thus can seamlessly use it in most sklearn-provided functions such as \texttt{classification\_report()} and its implementation can be found in the \texttt{tasks.models} module.
 	
-	The results of the classifier can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}. The results make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
+	The results of the classifier can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}. We note a high accuracy for most tags, which make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
 	
 	Thus, besides quantitative statistics such as categorical accuracy and f1-score, we should pay close attention to the precision and recall statistics for the more variable POS tags such as "NOUN" or "VERB" in order to properly evaluate our MLP classifier.
 	
 	
 	\subsection{MLP Classifier}
 	
-	The model we use is the pre-trained optimal model used in the previous assignment. We follow the same preprocessing and caching steps as in the previous assignment. Since the model is not trained again, we use only a subset of the original training data (25,000 windows) in order to save on scare main-memory resources. We consider this a representative sample for comparison with other classifiers due to the sample size (law of large numbers).
-	
-	Results can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}.
+	The model we use is the pre-trained optimal model used in the previous assignment. We follow the same preprocessing and caching steps as in the previous assignment. Since the model is not trained again, we use only a subset of the original training data (25,000 windows) in order to save on scare main-memory resources. We consider this a representative sample for comparison with other classifiers due to the sample size (law of large numbers). Results can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}.
 	
 	
 	\subsection{RNN Classifier}
@@ -182,29 +178,39 @@
 
 	Layer Normalization and dropout are kept mutually exclusive because of research indicating that the presence of both generally degrades performance during inference \cite{dropout-norm}. The article specifically mentions Batch Normalization, so we assume the same effect will most likely present itself using layer normalization on the grounds that both operate on the same principles.
 	
-	RNNs present a much more challenging task with the resources available on the local machine. We thus implement early stopping and set a maximum iteration limit of $30$, assuming that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times and set a relatively small number of iterations available to the tuner.
+	RNNs present a much more challenging task computationally with the resources available on the local machine. We thus implement early stopping and set a maximum iteration limit of $30$, assuming that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times and set a relatively small number of iterations available to the tuner.
 	
 	
 	\subsubsection{Training}
 	
-	We now re-train our model with a much smaller batch size and keep track of the training history and best weights by validation loss. 
-	
-	Unfortunately, the different batch size means we can not rely on the hyper parameter search to get an estimation of training epochs. Thus, we rely on early-stopping on the validation data to ensure our model does not overfit as a result of training time. 
+	Because of the large computational costs of our optimal model, we keep the very large batch size (256) used in tuning. We do however allow our model to train for more iterations and with more leniency, by increasing the epochs with no improvement before Early Stopping interrupts the training.
 	
 	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications.
 	
-	This phenomenon is demonstrated in Figure \ref{fig::ex_10_fit}.
+	Training loss and accuracy curves can be found in Figure \ref{fig::ex_2_fit}. The model's validation loss stops significantly improving from epoch 5 and onward, although the validation accuracy keeps marginally increasing until epoch 16. Keep in mind that epochs in this case represent thousands of iterations, since we feed the entire (large) dataset in the model each time.
 	
 	\begin{figure}
 		\centering
 		\includegraphics[width=10cm]{"ex_2_fit.png"}
 		\caption{Loss and accuracy on the training and validation sets depending on the number of epochs.}
-		\label{fig::ex_10_fit}
+		\label{fig::ex_2_fit}
 	\end{figure}
 	
 	\subsubsection{Results}
 	
-	The results of our RNN classifier compared to the previous MLP and baseline models mentioned above can be found in Tables \ref{tab::ex_10_train}, \ref{tab::ex_10_valid} and \ref{tab::ex_10_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	The results of our RNN classifier compared to the previous MLP and baseline models mentioned above can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	
+	Focusing on the test results we make the following observations:
+	\begin{itemize}
+		\item The RNN model overall does NOT outperform our MLP classifier, but does outperform the Baseline. This most likely means that a small, lean model, which only considers the immediate vicinity of the target word is sufficient for the POS tagging task in this dataset.
+		
+		\item The MLP classifier is by far the best classifier for unknown words ("X" tag), with 100\% precision and 21\% recall on the test set. Our RNN classifier scores 0\% on both.
+		
+		\item The RNN classifier completely ignores symbols ("SYM" tag), defined as "a word-like entity that differs from ordinary words by form, function, or both", which "can be substituted by normal words". Symbols have the second lowest support after unknown words (721 instances in the training dataset).
+		
+		\item The two observations above probably indicate that our RNN model suffers from under-fitting in tags with low support in the training set.
+	
+	\end{itemize}
 	
 	\input{output/ex_2_train.tex}
 	
