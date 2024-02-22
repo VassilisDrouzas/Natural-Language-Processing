@@ -119,7 +119,7 @@
 			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
 			\cellcolor{blue!25}\textbf{Total Sentence Count}\\
 			\hline
-			Training & 204614 & 12544 \\\hline
+			Training & 12544 & 12544 \\\hline
 			Validation & 25152  & 2001 \\\hline
 			Test & 25096 & 2077 \\\hline
 		\end{tabular}
@@ -140,6 +140,7 @@
 	Thus we use the fasttext \texttt{cc.en.300} model. This model has a total size of 7GB which may present OOM issues in some machines, but calculates embeddings extremely fast, while also allowing partial modeling of Out Of Vocabulary (OOV) words. The model is used to calculate the embedding matrix which is later attached to the RNN model.
 	
 	As we can see from Table \ref{tab::ex-2-sent-stats}, there is a sizable portion of our sentences that feature very few words. In order to make the RNN training more efficient, we choose to discard sentences with very few words. We also set a window size equal to the 90\% percentile of sentence word count, meaning tht 90\% of our windows will fully fit the training sentences. The rest will be automatically split into more sentences by the \texttt{TextVectorizer} layer we employ, and as such don't need to be excluded from the dataset.
+	
 	
 	\subsection{Baseline Classifier}
 	
