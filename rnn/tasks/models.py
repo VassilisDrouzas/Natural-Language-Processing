@@ -100,7 +100,6 @@ class SelfAttention(keras.layers.Layer):
         self.dropout_rate = dropout_rate
         temp_mlp = self.build_mlp()
         self.attention_mlp = keras.layers.TimeDistributed(temp_mlp)
-        #self.attention_mlp = temp_mlp
 
     def build_mlp(self):
         """
