@@ -103,9 +103,9 @@
 			\cellcolor{blue!25}\textbf{75\%} &
 			\cellcolor{blue!25}\textbf{Max} \\
 			\hline
-			Training & 16.31 & 12.4 & 1  & 7 & 14 & 23 & 159 \\\hline
-			Validation  & 12.56 & 10.41 & 1 & 5 & 10 & 17 & 75  \\\hline
-			Test & 12.08 & 10.6  & 1 & 4 & 9 & 17 & 81
+			Training & 18.96 & 11.78 & 5  & 10 & 16 & 24 & 159 \\\hline
+			Validation  & 15.66 & 10.05 & 5 & 8 & 13 & 20 & 75  \\\hline
+			Test & 12518 & 10.33  & 5 & 8 & 13 & 20 & 81
 			\\\hline
 		\end{tabular}
 		\centering
@@ -119,9 +119,9 @@
 			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
 			\cellcolor{blue!25}\textbf{Total Sentence Count}\\
 			\hline
-			Training & 12544 & 12544 \\\hline
-			Validation & 25152  & 2001 \\\hline
-			Test & 25096 & 2077 \\\hline
+			Training & 15967 & 10539 \\\hline
+			Validation & 24005  & 1538 \\\hline
+			Test & 23811 & 1535 \\\hline
 		\end{tabular}
 		\centering
 		\caption{Total text volume of each data split.}
@@ -158,25 +158,16 @@
 	
 	\subsection{RNN Classifier}
 	
-	\subsubsection{Architecture}
-	
-	We utilize a layered, bidirectional RNN with GRU cells and a Time-Distributed self-attention MLP layer. The self-attention output is given to a single dense layer, producing the final model output.
-	
-	Specifically, we modify the original Self-Attention layer to utilize a \texttt{TimeDistributed} MLP layer, in order to properly calculate attention scores for each distinct time-step. This technique follows the architecture presented in the lecture's slides.
-	
-	Unfortunately, the presence of the custom Self-Attention layer prevents us from using TimeDistributed outputs given that the outputs of the self-attention layer are necessarily aggregated for the entire input. Hence, instead of guessing $L$ words, where $L$ is the window length, we only compute 1 per pass, slowing down training times.
-	
 	\subsubsection{Hyper-parameter tuning}
 	
-	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model.
+	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model. We utilize a layered, bidirectional RNN with GRU cells and a Time-Distributed dense layer. 
 	
 	The parameter search consists of:
 	\begin{itemize}
+		\item The size of the GRU hidden state
 		\item The number of bidirectional layers
 		\item Whether to use Layer Normalization or dropout
 		\item Whether to use variational (recurrent) dropout
-		\item The number of self-attention layers
-		\item The number of neurons in each self-attention layer
 		\item The learning rate
 	\end{itemize}
 	
@@ -196,9 +187,7 @@
 	
 	Because of the large computational costs of our optimal model, we keep the very large batch size (256) used in tuning. We do however allow our model to train for more iterations and with more leniency, by increasing the epochs with no improvement before Early Stopping interrupts the training.
 	
-	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications.
-	
-	Training loss and accuracy curves can be found in Figure \ref{fig::ex_2_fit}. The model's validation loss stops significantly improving from epoch 5 and onward, although the validation accuracy keeps marginally increasing until epoch 16. Keep in mind that epochs in this case represent thousands of iterations, since we feed the entire (large) dataset in the model each time.
+	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications. Training loss and accuracy curves can be found in Figure \ref{fig::ex_2_fit}.
 	
 	\begin{figure}
 		\centering
@@ -213,13 +202,11 @@
 	
 	Focusing on the test results we make the following observations:
 	\begin{itemize}
-		\item The RNN model overall does NOT outperform our MLP classifier, but does outperform the Baseline. This most likely means that a small, lean model, which only considers the immediate vicinity of the target word is sufficient for the POS tagging task in this dataset.
+		\item The RNN model overall does NOT outperform our MLP classifier, nor the Baseline by overall MACRO-F1 score. This most likely means that a small, lean model, which only considers the immediate vicinity of the target word is sufficient for the POS tagging task in this dataset.
 		
-		\item The MLP classifier is by far the best classifier for unknown words ("X" tag), with 100\% precision and 21\% recall on the test set. Our RNN classifier scores 0\% on both.
+		\item The RNN model almost completely ignores symbols ("SYM" tag), defined as "a word-like entity that differs from ordinary words by form, function, or both", which "can be substituted by normal words". Symbols have the second lowest support after unknown words (721 instances in the training dataset). It does however beat the MLP classifier and almost matches the scores for "unknown" words ("X" tag), meaning that this is probably not an issue with sparsely seen categories. The RNN also completely ignores punctuation marks.
 		
-		\item The RNN classifier completely ignores symbols ("SYM" tag), defined as "a word-like entity that differs from ordinary words by form, function, or both", which "can be substituted by normal words". Symbols have the second lowest support after unknown words (721 instances in the training dataset).
-		
-		\item The two observations above probably indicate that our RNN model suffers from under-fitting in tags with low support in the training set.
+		\item In most other categories, the RNN closely matches the MLP baseline.
 	
 	\end{itemize}
 	
