@@ -35,6 +35,7 @@ def stats_for_tag(y_true, y_pred, tag: str) -> pd.DataFrame:
     """
     # Select tag with boolean mask
     indexes = np.where(y_true == tag, True, False)
+
     y_true_tag = y_true[indexes]
     y_pred_tag = y_pred[indexes]
 
