@@ -34,7 +34,7 @@
 
 \def\code#1{\texttt{#1}}
 
-\title{\Huge Text Analytics: 3rd Assignment}
+\title{\Huge Text Analytics: 4th Assignment}
 
 \author{\LARGE Tsirmpas Dimitris\\\LARGE Drouzas Vasilis}
 
@@ -58,7 +58,7 @@
 	
 	\section{Introduction}
 	
-	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of RNN models for sentiment analysis and POS tagging tasks.
+	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of CNN models for sentiment analysis and POS tagging tasks.
 	
 	This report and its associated code, analysis and results were conducted by the two authors. Specifically, the sentiment analysis task was performed by Drouzas Vasilis, and the POS-tagging task by Tsirmpas Dimitris. This report was written by both authors.
 	
@@ -160,29 +160,35 @@
 	
 	\subsection{RNN Classifier}
 	
+	We use the time-distributed, Bi-GRU RNN model used in the previous assignment. Both this and the CNN model use the same window-based input, thus no more intervention is necessary to run the model. Results can be found in the tables outlined above.
+	
+	
+	\subsection{CNN classifier}
+	
 	\subsubsection{Hyper-parameter tuning}
 	
-	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model. We utilize a layered, bidirectional RNN with GRU cells and a Time-Distributed dense layer. 
+	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model. We utilize a model with stacked convolutional layers, residual connections and either dropout or batch normalization. The CNN state is given to a Time-Distributed dense layer which decides the tag for the current word.
 	
 	The parameter search consists of:
 	\begin{itemize}
-		\item The size of the GRU hidden state
-		\item The number of bidirectional layers
-		\item Whether to use Layer Normalization or dropout
-		\item Whether to use variational (recurrent) dropout
+		\item The kernel size used, representing whether our model looks at 2-grams, 3-grams or 5-grams
+		\item The number of stacked CNN layers
+		\item Whether to use Batch Normalization or dropout
+		\item Whether to use embedding dropout
 		\item The learning rate
 	\end{itemize}
 	
 	
 	The parameter search does NOT consist of:
 	\begin{itemize}
+		\item Number of filters, since the size must be constant and equal to the embedding size for a token classification task.
 		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the trade-off between training time and overfit avoidance
 		\item Activation functions, since they rarely significantly influence the model's performance
 	\end{itemize}
 	
-	Layer Normalization and dropout are kept mutually exclusive because of research indicating that the presence of both generally degrades performance during inference \cite{dropout-norm}. The article specifically mentions Batch Normalization, so we assume the same effect will most likely present itself using layer normalization on the grounds that both operate on the same principles.
+	Batch Normalization and dropout are kept mutually exclusive because of research indicating that the presence of both generally degrades performance during inference \cite{dropout-norm}
 	
-	RNNs present a much more challenging task computationally with the resources available on the local machine. We thus implement early stopping and set a maximum iteration limit of $30$, assuming that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times and set a relatively small number of iterations available to the tuner.
+	Although CNNs are generally faster than RNNs due to their architecture enabling concurrent computation, they nevertheless present a much more challenging task computationally with the resources available on the local machine. We thus implement early stopping and set a maximum iteration limit of $30$, assuming that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times and set a relatively small number of iterations available to the tuner.
 	
 	
 	\subsubsection{Training}
@@ -200,7 +206,7 @@
 	
 	\subsubsection{Results}
 	
-	The results of our RNN classifier compared to the previous MLP and baseline models mentioned above can be found in Tables \ref{tab::ex_3_train}, \ref{tab::ex_3_valid} and \ref{tab::ex_3_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	The results of our CNN classifier compared to the previous MLP , RNNs and "dumb" baseline models mentioned above can be found in Tables \ref{tab::ex_3_train}, \ref{tab::ex_3_valid} and \ref{tab::ex_3_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
 	
 	Focusing on the test results we make the following observations:
 	\begin{itemize}
