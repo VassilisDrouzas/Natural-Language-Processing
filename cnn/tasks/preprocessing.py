@@ -268,6 +268,10 @@ def _save_global_state(
     y_test: np.ndarray,
     binarizer: LabelBinarizer,
 ) -> None:
+    
+    if not os.path.exists(save_dir): 
+        os.makedirs(save_dir) 
+
     np.save(os.path.join(save_dir, "x_train.npy"), x_train)
     np.save(os.path.join(save_dir, "x_valid.npy"), x_valid)
     np.save(os.path.join(save_dir, "x_test.npy"), x_test)
