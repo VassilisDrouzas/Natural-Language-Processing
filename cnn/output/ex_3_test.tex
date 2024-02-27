@@ -1,0 +1,96 @@
+\begin{longtable}{|l||l||l||l||l||l||l||l||l||l||l||l||l|}
+\caption{Results on the test dataset.} \label{tab::ex_3_test} \\
+\toprule
+ &  & precision & recall & f1 \\
+model & tag &  &  &  \\
+\midrule
+\endfirsthead
+\caption[]{Results on the test dataset.} \\
+\toprule
+ &  & precision & recall & f1 \\
+model & tag &  &  &  \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{Continued on next page} \\
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+\multirow[t]{18}{*}{\textbf{Baseline}} & \textbf{ADJ} & 1.000 & 0.824 & 0.903 \\
+\textbf{} & \textbf{ADP} & 1.000 & 0.667 & 0.800 \\
+\textbf{} & \textbf{ADV} & 1.000 & 0.830 & 0.907 \\
+\textbf{} & \textbf{AUX} & 1.000 & 0.783 & 0.878 \\
+\textbf{} & \textbf{CCONJ} & 1.000 & 0.985 & 0.992 \\
+\textbf{} & \textbf{DET} & 1.000 & 0.954 & 0.976 \\
+\textbf{} & \textbf{INTJ} & 1.000 & 0.733 & 0.846 \\
+\textbf{} & \textbf{NOUN} & 1.000 & 0.888 & 0.941 \\
+\textbf{} & \textbf{NUM} & 1.000 & 0.555 & 0.714 \\
+\textbf{} & \textbf{PART} & 1.000 & 0.896 & 0.945 \\
+\textbf{} & \textbf{PRON} & 1.000 & 0.950 & 0.974 \\
+\textbf{} & \textbf{PROPN} & 1.000 & 0.475 & 0.644 \\
+\textbf{} & \textbf{PUNCT} & 1.000 & 0.983 & 0.992 \\
+\textbf{} & \textbf{SCONJ} & 1.000 & 0.442 & 0.613 \\
+\textbf{} & \textbf{SYM} & 1.000 & 0.861 & 0.926 \\
+\textbf{} & \textbf{VERB} & 1.000 & 0.824 & 0.903 \\
+\textbf{} & \textbf{X} & 0.000 & 0.000 & 0.000 \\
+\textbf{} & \textbf{MACRO} & 0.777 & 0.744 & 0.749 \\
+\cline{1-5}
+\multirow[t]{18}{*}{\textbf{MLP}} & \textbf{ADJ} & 1.000 & 0.875 & 0.933 \\
+\textbf{} & \textbf{ADP} & 1.000 & 0.889 & 0.941 \\
+\textbf{} & \textbf{ADV} & 1.000 & 0.805 & 0.892 \\
+\textbf{} & \textbf{AUX} & 1.000 & 0.924 & 0.961 \\
+\textbf{} & \textbf{CCONJ} & 1.000 & 0.997 & 0.998 \\
+\textbf{} & \textbf{DET} & 1.000 & 0.969 & 0.984 \\
+\textbf{} & \textbf{INTJ} & 1.000 & 0.774 & 0.873 \\
+\textbf{} & \textbf{NOUN} & 1.000 & 0.896 & 0.945 \\
+\textbf{} & \textbf{NUM} & 1.000 & 0.843 & 0.915 \\
+\textbf{} & \textbf{PART} & 1.000 & 0.862 & 0.926 \\
+\textbf{} & \textbf{PRON} & 1.000 & 0.939 & 0.969 \\
+\textbf{} & \textbf{PROPN} & 1.000 & 0.741 & 0.851 \\
+\textbf{} & \textbf{PUNCT} & 1.000 & 0.984 & 0.992 \\
+\textbf{} & \textbf{SCONJ} & 1.000 & 0.542 & 0.703 \\
+\textbf{} & \textbf{SYM} & 1.000 & 0.783 & 0.878 \\
+\textbf{} & \textbf{VERB} & 1.000 & 0.869 & 0.930 \\
+\textbf{} & \textbf{X} & 1.000 & 0.114 & 0.205 \\
+\textbf{} & \textbf{MACRO} & 0.838 & 0.812 & 0.821 \\
+\cline{1-5}
+\multirow[t]{18}{*}{\textbf{RNN}} & \textbf{ADJ} & 1.000 & 0.875 & 0.933 \\
+\textbf{} & \textbf{ADP} & 1.000 & 0.883 & 0.938 \\
+\textbf{} & \textbf{ADV} & 1.000 & 0.774 & 0.872 \\
+\textbf{} & \textbf{AUX} & 1.000 & 0.948 & 0.973 \\
+\textbf{} & \textbf{CCONJ} & 1.000 & 0.974 & 0.987 \\
+\textbf{} & \textbf{DET} & 1.000 & 0.976 & 0.988 \\
+\textbf{} & \textbf{INTJ} & 1.000 & 0.605 & 0.754 \\
+\textbf{} & \textbf{NOUN} & 1.000 & 0.779 & 0.876 \\
+\textbf{} & \textbf{NUM} & 1.000 & 0.779 & 0.876 \\
+\textbf{} & \textbf{PART} & 1.000 & 0.978 & 0.989 \\
+\textbf{} & \textbf{PRON} & 1.000 & 0.926 & 0.962 \\
+\textbf{} & \textbf{PROPN} & 1.000 & 0.474 & 0.643 \\
+\textbf{} & \textbf{PUNCT} & 1.000 & 0.009 & 0.017 \\
+\textbf{} & \textbf{SCONJ} & 1.000 & 0.558 & 0.716 \\
+\textbf{} & \textbf{SYM} & 0.000 & 0.000 & 0.000 \\
+\textbf{} & \textbf{VERB} & 1.000 & 0.842 & 0.914 \\
+\textbf{} & \textbf{X} & 1.000 & 0.350 & 0.519 \\
+\textbf{} & \textbf{MACRO} & 0.783 & 0.690 & 0.691 \\
+\cline{1-5}
+\multirow[t]{18}{*}{\textbf{CNN}} & \textbf{ADJ} & 1.000 & 0.840 & 0.913 \\
+\textbf{} & \textbf{ADP} & 1.000 & 0.863 & 0.926 \\
+\textbf{} & \textbf{ADV} & 1.000 & 0.785 & 0.880 \\
+\textbf{} & \textbf{AUX} & 1.000 & 0.888 & 0.940 \\
+\textbf{} & \textbf{CCONJ} & 1.000 & 0.970 & 0.985 \\
+\textbf{} & \textbf{DET} & 1.000 & 0.976 & 0.988 \\
+\textbf{} & \textbf{INTJ} & 1.000 & 0.605 & 0.754 \\
+\textbf{} & \textbf{NOUN} & 1.000 & 0.784 & 0.879 \\
+\textbf{} & \textbf{NUM} & 1.000 & 0.771 & 0.871 \\
+\textbf{} & \textbf{PART} & 1.000 & 0.995 & 0.998 \\
+\textbf{} & \textbf{PRON} & 1.000 & 0.965 & 0.982 \\
+\textbf{} & \textbf{PROPN} & 1.000 & 0.473 & 0.643 \\
+\textbf{} & \textbf{PUNCT} & 1.000 & 0.009 & 0.017 \\
+\textbf{} & \textbf{SCONJ} & 1.000 & 0.469 & 0.638 \\
+\textbf{} & \textbf{SYM} & 0.000 & 0.000 & 0.000 \\
+\textbf{} & \textbf{VERB} & 1.000 & 0.831 & 0.908 \\
+\textbf{} & \textbf{X} & 1.000 & 0.287 & 0.447 \\
+\textbf{} & \textbf{MACRO} & 0.779 & 0.677 & 0.675 \\
+\cline{1-5}
+\end{longtable}
