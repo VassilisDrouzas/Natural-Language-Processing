@@ -1,11 +1,9 @@
-from typing import Callable
 import matplotlib.pyplot as plt
-import tensorflow as tf
-from tensorflow import keras
 from sklearn import metrics
 import pandas as pd
 import numpy as np
 
+from typing import Callable
 import os
 
 
@@ -15,6 +13,8 @@ def save_plot(filename: str, dir_name: str = "output") -> None:
 
     :param filename: The name of the file for the Figure.
     :type filename: str
+    :param dir_name: The directory where the plot will be saved. Default is "output".
+    :type dir_name: str
     """
     path = os.path.join(dir_name, filename)
 
@@ -22,10 +22,20 @@ def save_plot(filename: str, dir_name: str = "output") -> None:
         os.makedirs(dir_name)
 
     plt.savefig(path, bbox_inches="tight")
-    print(f"Figured saved to " + path)
+    print(f"Figure saved to " + path)
 
 
 def pr_auc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Calculate the area under the precision-recall curve.
+
+    :param y_true: True labels.
+    :type y_true: np.ndarray
+    :param y_pred: Predicted labels.
+    :type y_pred: np.ndarray
+    :return: Area under the precision-recall curve.
+    :rtype: float
+    """
     prec, recall, _ = metrics.precision_recall_curve(y_true, y_pred)
     auc = metrics.auc(recall, prec)
     return 0.0 if np.isnan(auc) else auc
@@ -34,6 +44,18 @@ def pr_auc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 def pr_auc_macro(
     y_true: np.ndarray, y_pred: np.ndarray, labels: np.ndarray
 ) -> float:
+    """
+    Calculate macro-averaged area under the precision-recall curve.
+
+    :param y_true: True labels.
+    :type y_true: np.ndarray
+    :param y_pred: Predicted labels.
+    :type y_pred: np.ndarray
+    :param labels: Unique labels.
+    :type labels: np.ndarray
+    :return: Macro-averaged area under the precision-recall curve.
+    :rtype: float
+    """
     macro_scores = []
 
     for i, label in enumerate(np.unique(labels)):
@@ -57,9 +79,17 @@ def stats_for_tag(
     Calculate precision, recall, and F1-score for a specific tag.
 
     :param y_true: True labels.
+    :type y_true: np.ndarray
     :param y_pred: Predicted labels.
+    :type y_pred: np.ndarray
     :param tag: The tag for which to calculate the statistics.
+    :type tag: str
+    :param proba: Probabilities predicted by the model.
+    :type proba: np.ndarray
+    :param tag_index: Index of the tag.
+    :type tag_index: int
     :return: DataFrame containing precision, recall, and F1-score for the specified tag.
+    :rtype: pd.DataFrame
     """
     # Select tag with boolean mask
     indexes = np.where(y_true == tag, True, False)
@@ -102,8 +132,15 @@ def stats_macro(
     Calculate macro-averaged precision, recall, and F1-score.
 
     :param y_true: True labels.
+    :type y_true: np.ndarray
     :param y_pred: Predicted labels.
+    :type y_pred: np.ndarray
+    :param tags: Unique labels.
+    :type tags: np.ndarray
+    :param proba: Probabilities predicted by the model.
+    :type proba: np.ndarray
     :return: DataFrame containing macro-averaged precision, recall, and F1-score.
+    :rtype: pd.DataFrame
     """
     accuracy = metrics.accuracy_score(y_true, y_pred)
     precision = metrics.precision_score(
@@ -140,14 +177,23 @@ def stats_all_tags(
     Calculate precision, recall, and F1-score for all unique tags.
 
     :param y_true: True labels.
+    :type y_true: np.ndarray
     :param y_pred: Predicted labels.
+    :type y_pred: np.ndarray
+    :param labels: Unique labels.
+    :type labels: np.ndarray
+    :param proba: Probabilities predicted by the model.
+    :type proba: np.ndarray
     :return: DataFrame containing precision, recall, and F1-score for each unique tag.
+    :rtype: pd.DataFrame
     """
     dfs = []
     for i, tag in enumerate(np.unique(y_true)):
         dfs.append(stats_for_tag(y_true, y_pred, tag, proba, i))
 
-    dfs.append(stats_macro(y_true, y_pred, labels, proba))
+    dfs.append(stats_macro(y_true,
+
+ y_pred, labels, proba))
 
     return pd.concat(dfs)
 
@@ -163,6 +209,30 @@ def stats_by_label(
     y_valid_proba: np.ndarray,
     y_test_proba: np.ndarray,
 ) -> pd.DataFrame:
+    """
+    Generate statistics for training, validation, and test splits.
+
+    :param y_true_train: True labels for training data.
+    :type y_true_train: np.ndarray
+    :param y_true_valid: True labels for validation data.
+    :type y_true_valid: np.ndarray
+    :param y_true_test: True labels for test data.
+    :type y_true_test: np.ndarray
+    :param y_train_pred: Predicted labels for training data.
+    :type y_train_pred: np.ndarray
+    :param y_valid_pred: Predicted labels for validation data.
+    :type y_valid_pred: np.ndarray
+    :param y_test_pred: Predicted labels for test data.
+    :type y_test_pred: np.ndarray
+    :param y_train_proba: Probabilities predicted by the model for training data.
+    :type y_train_proba: np.ndarray
+    :param y_valid_proba: Probabilities predicted by the model for validation data.
+    :type y_valid_proba: np.ndarray
+    :param y_test_proba: Probabilities predicted by the model for test data.
+    :type y_test_proba: np.ndarray
+    :return: DataFrame containing statistics for each split.
+    :rtype: pd.DataFrame
+    """
     train_df = stats_all_tags(
         y_true_train, y_train_pred, y_true_train, y_train_proba
     )
@@ -194,14 +264,27 @@ def get_statistics(
     Calculate statistics for training, validation, and test splits.
 
     :param model: The model to evaluate.
+    :type model: Any
     :param transform_output_func: A function to transform model outputs.
+    :type transform_output_func: Callable
     :param x_train: Training input data.
+    :type x_train: np.ndarray
     :param x_valid: Validation input data.
+    :type x_valid: np.ndarray
     :param x_test: Test input data.
+    :type x_test: np.ndarray
     :param y_train: True labels for training data.
+    :type y_train: np.ndarray
     :param y_valid: True labels for validation data.
+    :type y_valid: np.ndarray
     :param y_test: True labels for test data.
+    :type y_test: np.ndarray
+    :param calculate_proba: Flag to indicate whether to calculate probabilities.
+    :type calculate_proba: bool
+    :param time_distributed_func: A function to apply to the model outputs. Default is identity.
+    :type time_distributed_func: Callable, optional
     :return: DataFrame containing statistics for each split.
+    :rtype: pd.DataFrame
     """
     y_true_train = transform_output_func(y_train)
     y_true_valid = transform_output_func(y_valid)
