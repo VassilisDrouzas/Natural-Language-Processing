@@ -65,7 +65,7 @@ def tune_self_attention_gru(
         if use_layer_norm:
             model.add(LayerNormalization())
         else:
-            model.add(Dropout(0.33))
+            model.add(Dropout(0.2))
     
     model.add(
             Bidirectional(
