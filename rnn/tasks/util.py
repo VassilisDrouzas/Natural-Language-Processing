@@ -72,6 +72,7 @@ def stats_for_tag(
     y_pred_vec = np.where(y_pred_tag == tag, 1, 0).astype(int)
 
     # Get stats
+    accuracy = metrics.accuracy_score(y_true_vec, y_pred_vec)
     precision = metrics.precision_score(y_true_vec, y_pred_vec, zero_division=0)
     recall = metrics.recall_score(y_true_vec, y_pred_vec, zero_division=0)
     f1 = metrics.f1_score(y_true_vec, y_pred_vec, zero_division=0)
@@ -84,6 +85,7 @@ def stats_for_tag(
 
     return pd.DataFrame(
         {
+            "accuracy": [accuracy],
             "tag": [tag],
             "precision": [precision],
             "recall": [recall],
@@ -103,6 +105,7 @@ def stats_macro(
     :param y_pred: Predicted labels.
     :return: DataFrame containing macro-averaged precision, recall, and F1-score.
     """
+    accuracy = metrics.accuracy_score(y_true, y_pred)
     precision = metrics.precision_score(
         y_true, y_pred, labels=tags, zero_division=0, average="macro"
     )
@@ -121,6 +124,7 @@ def stats_macro(
     return pd.DataFrame(
         {
             "tag": ["MACRO"],
+            "accuracy": [accuracy],
             "precision": [precision],
             "recall": [recall],
             "f1": [f1],
@@ -205,7 +209,7 @@ def get_statistics(
 
     raw_pred_train = model.predict(x_train)
     raw_pred_valid = model.predict(x_valid)
-    raw_pred_test = model.predict(x_test) 
+    raw_pred_test = model.predict(x_test)
 
     y_train_proba = time_distributed_func(raw_pred_train)
     y_valid_proba = time_distributed_func(raw_pred_valid)
