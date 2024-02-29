@@ -210,9 +210,9 @@
 	
 	Focusing on the test results we make the following observations:
 	\begin{itemize}
-		\item The CNN model currently ranks last of all models, including the "dumb" baseline model in test F1-score. This does NOT necessarily indicate that the model is worse overall, since it has been optimized with regards to overall accuracy and not f1-score. Indeed, the CNN model decisively beats the RNN, and marginally loses to the MLP model on accuracy.
+		\item The CNN model currently ranks last of all models, including the "dumb" baseline model in test F1-score. This does NOT necessarily indicate that the model is worse overall, since it has been optimized with regards to overall accuracy and not f1-score.
 		
-		\item The CNN model is limited by its complete inability to perceive
+		\item The CNN model is limited by its complete inability to perceive unknown words ("X" tag) much like the RNN and Baseline classifiers. This is a consistent problem, severely limiting even the MLP  model.
 		
 	\end{itemize}
 	
