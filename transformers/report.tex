@@ -1,0 +1,612 @@
+\documentclass[10pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[greek, english]{babel}
+\usepackage{alphabeta}
+\usepackage{libertine}
+\usepackage{graphicx}
+\usepackage[backend=biber]{biblatex}
+\usepackage[table]{xcolor}
+\usepackage{mathptmx} % Times New Roman
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{mathtools}
+\usepackage{subcaption} %for subfigures
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	filecolor=magenta,      
+	urlcolor=blue
+}
+
+
+\pagenumbering{arabic}
+\graphicspath{ {./output/}{./images/} }
+\addbibresource{refs.bib}
+
+\def\code#1{\texttt{#1}}
+
+\title{\Huge Text Analytics: 4th Assignment}
+
+\author{\LARGE Tsirmpas Dimitris\\\LARGE Drouzas Vasilis}
+
+
+\begin{document}
+	
+	\begin{titlepage}
+		\maketitle
+		\begin{center}
+			
+			\large Athens University of Economics and Business
+			
+			\large MSc in Data Science
+			
+		\end{center}
+		
+	\end{titlepage}
+	
+	\tableofcontents
+	\newpage	
+	
+	\section{Introduction}
+	
+	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of CNN models for sentiment analysis and POS tagging tasks.
+	
+	This report and its associated code, analysis and results were conducted by the two authors. Specifically, the sentiment analysis task was performed by Drouzas Vasilis, and the POS-tagging task by Tsirmpas Dimitris. This report was written by both authors.
+	
+	
+	\section{POS Tagging}
+	
+	POS tagging is a language processing task where words in a given text are assigned specific grammatical categories, such as nouns, verbs, or adjectives. The objective is to analyze sentence structure. 
+	
+	In this section we describe how we can leverage pre-trained word embeddings to create a context-aware RNN classifier.
+	
+	
+	\subsection{Dataset}
+	
+	Acquiring and preprocessing our data with the goal of eventually acquiring a sufficient representation of our text is the most difficult and time-consuming task. We thus split it in distinct phases:
+	
+	\begin{itemize}
+		\item Original dataset acquisition and parsing
+		\item Qualitative analysis and preprocessing
+		\item Transformation necessary for the NLP task
+	\end{itemize}
+	
+	Each of these distinct steps are individually analyzed below.
+	
+	
+	\subsubsection{Acquisition}
+	
+	We select the \href{https://universaldependencies.org/treebanks/en_ewt/index.html}{English EWT-UD} tree, which is the largest currently supported collection for POS tagging tasks for the English language.
+	
+	This corpus contains 16622 sentences, 251492 tokens and 254820 syntactic words, as well as 926 types of words that contain both letters and punctuation, such as 's, n't, e-mail, Mr., ’s, etc). This is markedly a much higher occurrence than its siblings, and therefore may lead to a slightly more difficult task.
+	
+	The dataset is made available in \texttt{conllu} format, which we parse using the recommended \texttt{conllu} python library. We create a dataframe for every word and its corresponding POS tag and link words belonging to the same sentences by a unique sentence ID. The data are already split to training, validation and test sets, thus our own sets correspond to the respective split files.
+	
+	We are interested in the UPOS (Universal Part of Speech) tags for English words.
+	
+	\subsubsection{Qualitative Analysis}
+	
+	Our training vocabulary is comprised of $16654$ words. We include qualitative statistics on the sentences of our dataset in Tables \ref{tab::ex-2-sent-stats} and \ref{tab::ex-2-stats}. The splits are explicitly mentioned separately because the splitting was performed by the dataset authors and not by random sampling. We would therefore like to confirm at a glance whether their data are similar.
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Mean} & \cellcolor{blue!25}\textbf{Std} &
+			\cellcolor{blue!25}\textbf{Min} & \cellcolor{blue!25}\textbf{25\%} & \cellcolor{blue!25}\textbf{50\%} &
+			\cellcolor{blue!25}\textbf{75\%} &
+			\cellcolor{blue!25}\textbf{Max} \\
+			\hline
+			Training & 18.96 & 11.78 & 5  & 10 & 16 & 24 & 159 \\\hline
+			Validation  & 15.66 & 10.05 & 5 & 8 & 13 & 20 & 75  \\\hline
+			Test & 12518 & 10.33  & 5 & 8 & 13 & 20 & 81
+			\\\hline
+		\end{tabular}
+		\centering
+		\caption{Summary and order statistics for the number of words in the sentences of each data split.}
+		\label{tab::ex-2-sent-stats}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
+			\cellcolor{blue!25}\textbf{Total Sentence Count}\\
+			\hline
+			Training & 15967 & 10539 \\\hline
+			Validation & 24005  & 1538 \\\hline
+			Test & 23811 & 1535 \\\hline
+		\end{tabular}
+		\centering
+		\caption{Total text volume of each data split.}
+		\label{tab::ex-2-stats}
+	\end{table}
+	
+	
+	\subsubsection{Preprocessing}
+	
+	Given the nature of our task we can not implement preprocessing steps such as removing punctuation marks, stopwords or augmenting the dataset. Thus, the only meaningful preprocessing at this stage would be converting the words to lowercase. We believe that the context of each word will carry enough information to distinguish its POS tag regardless of case. 
+	
+	Another issue we need to address before continuing is that of words being part of (depending on) other words for their POS tag. Those would be words such as "don't", "couldn't" or "you're". In the standard UPOS schema these are defined as two or more separate words, where the first is represented by its standard POS tag, and the rest as part of that tag (UPOS tag "PART"). For instance, "don't" would be split into "do" and "n't" with "AUX" and "PART" tags respectively. In our dataset, these words are represented both in the manner described above followed by the full word ("don't") tagged with the pseudo-tag "\_". We remove the latter representation from the working dataset.
+	
+	For the word embeddings we originally used a Word2Vec variant implemented in the \texttt{spacy} library called \texttt{en\_core\_web\_md}. The model seemed suitable for our needs because of the similarities in domain (pre-trained on blogs, news and comments which fits our dataset). However, it proved extremely slow and thus constrained the amount of embeddings we could reasonably procure, limiting our classifier.
+	
+	Thus we use the fasttext \texttt{cc.en.300} model. This model has a total size of 7GB which may present OOM issues in some machines, but calculates embeddings extremely fast, while also allowing partial modeling of Out Of Vocabulary (OOV) words. The model is used to calculate the embedding matrix which is later attached to the RNN model.
+	
+	As we can see from Table \ref{tab::ex-2-sent-stats}, there is a sizable portion of our sentences that feature very few words. In order to make the RNN training more efficient, we choose to discard sentences with very few words. We also set a window size equal to the 90\% percentile of sentence word count, meaning tht 90\% of our windows will fully fit the training sentences. The rest will be automatically split into more sentences, and as such don't need to be excluded from the dataset.
+	
+	
+	\subsection{Baseline Classifier}
+	
+	We create our own classifier which classifies each token by the majority label associated with it. The classifier is defined as a subclass of sklearn's classifier superclass and thus can seamlessly use it in most sklearn-provided functions such as \texttt{classification\_report()} and its implementation can be found in the \texttt{tasks.models} module.
+	
+	The results of the classifier can be found in Tables \ref{tab::ex_3_train}, \ref{tab::ex_3_valid} and \ref{tab::ex_3_test}. We note a high accuracy for most tags, which make intuitive sense, since most words in the English language can be classified in a single label, irrespective of context. For example, "is" will always be classified as "AUX", and all punctuation marks will be classified as "PUNCT".
+	
+	Thus, besides quantitative statistics such as categorical accuracy and f1-score, we should pay close attention to the precision and recall statistics for the more variable POS tags such as "NOUN" or "VERB" in order to properly evaluate our MLP classifier.
+	
+	
+	\subsection{MLP Classifier}
+	
+	The model we use is the pre-trained optimal model used in the previous assignment. We follow the same preprocessing and caching steps as in the previous assignment. Since the model is not trained again, we use only a subset of the original training data (25,000 windows) in order to save on scare main-memory resources. We consider this a representative sample for comparison with other classifiers due to the sample size (law of large numbers). Results can be found in Tables \ref{tab::ex_3_train}, \ref{tab::ex_3_valid} and \ref{tab::ex_3_test}.
+	
+	
+	\subsection{RNN Classifier}
+	
+	We use the time-distributed, Bi-GRU RNN model used in the previous assignment. Both this and the CNN model use the same window-based input, thus no more intervention is necessary to run the model. Results can be found in the tables outlined above.
+	
+	
+	\subsection{CNN classifier}
+	
+	\subsubsection{Hyper-parameter tuning}
+	
+	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model. We utilize a model with stacked convolutional layers, residual connections and either dropout or batch normalization. The CNN state is given to a Time-Distributed dense layer which decides the tag for the current word.
+	
+	The parameter search consists of:
+	\begin{itemize}
+		\item The kernel size used, representing whether our model looks at 2-grams, 3-grams or 5-grams
+		\item The number of stacked CNN layers
+		\item Whether to use Batch Normalization or dropout
+		\item Whether to use embedding dropout
+		\item The learning rate
+	\end{itemize}
+	
+	
+	The parameter search does NOT consist of:
+	\begin{itemize}
+		\item Number of filters, since the size must be constant and equal to the embedding size for a token classification task.
+		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the trade-off between training time and overfit avoidance
+		\item Activation functions, since they rarely significantly influence the model's performance
+	\end{itemize}
+	
+	Batch Normalization and dropout are kept mutually exclusive because of research indicating that the presence of both generally degrades performance during inference \cite{dropout-norm}
+	
+	Although CNNs are generally faster than RNNs due to their architecture enabling concurrent computation, they nevertheless present a much more challenging task computationally with the resources available on the local machine. We thus implement early stopping and set a maximum iteration limit of $30$, assuming that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times and set a relatively small number of iterations available to the tuner.
+	
+	
+	\subsubsection{Training}
+	
+	Because of the large computational costs of our optimal model, we keep the very large batch size (256) used in tuning. We do however allow our model to train for more iterations and with more leniency, by increasing the epochs with no improvement before Early Stopping interrupts the training.
+	
+	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications. Training loss and accuracy curves can be found in Figure \ref{fig::ex_3_fit}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=10cm]{"ex_3_fit.png"}
+		\caption{Loss and accuracy on the training and validation sets depending on the number of epochs.}
+		\label{fig::ex_3_fit}
+	\end{figure}
+	
+	\subsubsection{Results}
+	
+	The results of our CNN classifier compared to the previous MLP , RNNs and "dumb" baseline models mentioned above can be found in Tables \ref{tab::ex_3_train}, \ref{tab::ex_3_valid} and \ref{tab::ex_3_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	
+	Focusing on the test results we make the following observations:
+	\begin{itemize}
+		\item The CNN model currently ranks last of all models, including the "dumb" baseline model in test F1-score. This does NOT necessarily indicate that the model is worse overall, since it has been optimized with regards to overall accuracy and not f1-score.
+		
+		\item The CNN model is limited by its complete inability to perceive unknown words ("X" tag) much like the RNN and Baseline classifiers. This is a consistent problem, severely limiting even the MLP  model.
+		
+	\end{itemize}
+	
+	\input{output/ex_3_train.tex}
+	
+	\input{output/ex_3_valid.tex}
+	
+	\input{output/ex_3_test.tex}
+	
+	
+	\section{Sentiment Analysis}
+	
+	Sentiment analysis, also known as opinion mining, is the process of analyzing text to determine the sentiment or emotional tone expressed within it. The goal of sentiment analysis is to understand the attitudes, opinions, and emotions conveyed by the text. 
+	
+	
+	\subsection{Dataset}
+	Here we will be working with the \href{http://www.cs.cornell.edu/people/pabo/movie-review-data/}{Cornell Movie Review dataset}, which consists of 2000 movie reviews, split equally in 1000 positive and 1000 negative ones. The goal here will be to develop classifiers that will effectively understand whether a review is a positive or negative one, based on the data it has been trained on.We begin by taking a brief look into our dataset.
+	
+	
+	\subsubsection{Average Document Length }
+	
+	The average document length in words and characters is:
+	\begin{itemize}
+		\item Average number of words: 746.3405
+		\item Average number of characters: 3893.002
+	\end{itemize}
+	
+	
+	
+	
+	\subsubsection{Pre-processing}
+	
+	For demonstration reasons, we start by printing the 20 most frequent words in the text, in Figure \ref{fig::20_common}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=4cm]{"20\_most\_common_words".png}
+		\caption{The 20 most common words in the text, along with their occurences.}
+		\label{fig::20_common}
+	\end{figure}
+	
+	
+	
+	Most of these words are actually stop words. As in most text classification problems, we would typically need to remove the stop words of the text.
+	
+	The english stopwords is a package of 179 words that in general, would not help in a sentiment analysis problem. But, since they include terms that are negative, removing them could prove harmful for our case, since we are dealing with a sentiment analysis problem.
+	
+	e.g. imagine the phrase "I didn't like the film" to end up "like film". Disastrous, right?
+	
+	So, the plan is to remove all the stop words that include negative meaning before the preprocessing.
+	The stop words that we decided to keep in the text are shown in Figure \ref{fig::to_keep}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=4cm]{"to_keep_words".png}
+		\caption{The 'important' words we decided to keep for this sentiment analysis problem.}
+		\label{fig::to_keep}
+	\end{figure}
+	
+	Moving on to the pre-processing task, the steps performed are the following:
+	\begin{itemize}
+		\item{ Combination to a single document.}
+		\item{ Convertion to lowercase.}
+		\item{Lemmatization and stop words extraction.}
+		\item{ Punctuation removal.}
+		\item{ Number removal.}
+		\item{Single characters removal.}
+		\item{ Converting multiple spaces to single ones.}
+	\end{itemize}
+	
+	\subsubsection{Splitting the dataset}
+	We decided to split the (processed) dataset into the training set (70\%), development set (15\%) and test set (15\%). The sizes of each set are shown in Table \ref{tab::ex-9-stats}.
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
+			\cellcolor{blue!25}\textbf{Total Document Count}\\
+			\hline
+			Training & 36624 & 1400 \\\hline
+			Development & 16948  & 300 \\\hline
+			Test & 16780 & 300 \\\hline
+		\end{tabular}
+		\centering
+		\caption{Total text volume of each data split.}
+		\label{tab::ex-9-stats}
+	\end{table}
+	
+	
+	\subsubsection{SpaCy}
+	As an additional step to our pre-processing function, we also used SpaCy in order to proceed to the sentence splitting and the tokenization, in the same manner as we discussed in the lab. In the training dataset, we find out that the average word length dropped from 2586.9 (before tokenization) dropped to 312.98 (after tokenization). More statistics about the mean and the standard deviation of the sequence length on the training, development and test sets can be found in Table \ref{tab::ex-1-stats} .
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Mean of sequence length} &
+			\cellcolor{blue!25}\textbf{Standard deviation of sequence length}\\
+			\hline
+			Training & 312.97 & 134.5 \\\hline
+			Development & 315.1  & 139.3 \\\hline
+			Test & 305 & 131.2 \\\hline
+		\end{tabular}
+		\centering
+		\caption{Mean and standard deviation of the sequence length in training,development and test sets.}
+		\label{tab::ex-1-stats}
+	\end{table}
+	
+	
+	
+	\subsubsection{Padding the sequences}
+	After that, we used the Tokenizer module from keras preprocessing with maximum number of words to 100000 (so we kept all words actually) and we replaced all rare words with UNK values. We keep a word index (a dictionary where the keys are words (tokens) and the values are their corresponding indices in the tokenizer's vocabulary). Eventually we find out that the number of unique words in the index is 36637.
+	
+	Next steps involve converting the tokenized sets to sequences and padding these sequences.
+	
+	\subsubsection{Embedding matrix}
+	We downloaded the fasttext binary model that includes pretrained word embeddings. The procedure to create the embedding matrix was the following: We iterated over the word\_index dictionary, and for each word we check whether the index is within the limit of MAX\_WORDS. If so, we retrieve the word vector from the fasttext model and we assign it to the corresponding word row in the embedding matrix.
+	
+	
+	\subsection{Classifiers}
+	\subsubsection{DummyClassifier}
+	DummyClassifier makes predictions that ignore the input features. This classifier serves as a simple baseline to compare against other more complex classifiers.The strategy to generate predictions was set to ‘most\_frequent’,  meaning that the predict method always returns the most frequent class label. The results of this classifier are demonstrated in Figure \ref{fig::dummy_metrics}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=8cm]{"DummyClf_metrics".png}
+		\caption{Classification results of DummyClassifier for training,test and validation sets.}
+		\label{fig::dummy_metrics}
+	\end{figure}
+	
+	
+	As expected, the results are poor since the decision of the classifier depends exclusively only the majority class.
+	
+	\subsubsection{Logistic Regression}
+	Logistic Regression is a statistical method used for binary classification tasks, where the output variable takes only two possible outcomes.
+	Before applying Logistic Regression, we will perform a grid search to find the optimal parameters to run the classifier. The parameters we tried are the following:
+	\begin{itemize}
+		\item{Solver: We tested ‘liblinear’ and ‘saga’ solvers}
+		\item{Penalty: We tested ‘l1’, ‘l2’ reguralization penalties}
+		\item{C: We tested values of 0.001, 0.01, 0.1, 1 and 10 (inverse of regularization strength)}
+	\end{itemize}
+	
+	The best hyperparameters were the following:
+	C= 1, penalty= ‘l2’, solver = ‘liblinear’.
+	
+	Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Figure \ref{fig::LR_metrics} .
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=8cm]{"LRClf_metrics".png}
+		\caption{Metrics of the Logistic Regression on the training, test and development sets.}
+		\label{fig::LR_metrics}
+	\end{figure}
+	
+	
+	\subsubsection{Our custom MLP classifier}
+	
+	First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying fit\_transform() and transform() to the training and development 1-hot vectors respectively.
+	
+	Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 50 and early stopping was used. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-hyper}).
+	
+	
+	
+	
+	\begin{table}
+		\centering
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\rowcolor{blue!25}\textbf{Learning rate} & \cellcolor{blue!25}\textbf{\#Hidden layers} & \cellcolor{blue!25}\textbf{Hidden layers size} & \cellcolor{blue!25}\textbf{Dropout probability} & \cellcolor{blue!25}\textbf{Batch size}\\
+			\hline
+			0.001 & 1 & 64 & 0.4 & 1\\
+			\hline
+			0.01 & 2 & 128 & 0.5 & 64\\
+			\hline
+			0.1 &  &  & & 128 \\
+			
+			
+			
+			\hline
+		\end{tabular}
+		\caption{Hyperpameters tested in the development set.}
+		\label{tab::ex-9-hyper}
+	\end{table}
+	
+	The process to decide the hyperparameters is simple: We defined a list of the possible hyperparameter combinations and for each one we ran the model. After that, we evaluated on the development set and we kept the model with the best development accuracy.
+	
+	
+	The optimal model consisted of the following hyperparameters:
+	\begin{itemize}
+		\item Learning rate: 0.1
+		\item Number of hidden layers: 1
+		\item Hidden layers' size: 64
+		\item Dropout probability: 0.4
+		\item Batch size: 64
+	\end{itemize}
+	
+	The results we gain are shown in Figures \ref{fig::mlp_accuracy}, \ref{fig::mlp_loss}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_accuracy".png}
+		\caption{MLP accuracy as a function of epochs.}
+		\label{fig::mlp_accuracy}
+	\end{figure}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_loss".png}
+		\caption{MLP loss as a function of epochs.}
+		\label{fig::mlp_loss}
+	\end{figure}
+	
+	Next, we provide the metrics (Precision,Recall, F1 score and the AUC scores) for training, development and test subsets in Figure \ref{fig::mlp_metrics}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_metrics".png}
+		\caption{Metrics for the MLP classifier for both classes for the training, development and test sets.}
+		\label{fig::mlp_metrics}
+	\end{figure}
+	
+	Finally,  the Macro-averaged metrics (averaging the corresponding scores of the previous bullet over the classes) for the training, development and test subsets, are shown in Figure \ref{fig::mlp_macro_metrics}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"MLP_Macro_metrics".png}
+		\caption{Macro-Metrics for the MLP classifier for both classes for the training, development and test sets.}
+		\label{fig::mlp_macro_metrics}
+	\end{figure}
+	
+	\subsubsection{Our custom RNN classifier}
+	We start by creating a Self Attention class, which builds a sequential model as we discussed in the lab. We create the one-hot vectors we will need and now we are ready to construct our RNN model. The RNN model we create is a Sequential one, with:
+	\begin{itemize}
+		\item An embedding layer, which produces dense vector of fixed size. It utilizes the embedding matrix and sets the pre-trained word embeddings to non-trainable.
+		\item Bidirectional GRU layers (processing the input)
+		\item The self attention layer on the MLP.
+		\item Dense layers, with 'relu' as the activation function.
+		\item Dropout, output layers and the compilation part (using Adam this time).
+	\end{itemize}
+	
+	The hyperparameters we will use here are summarized in Table \ref{tab::ex-1-hyper}.
+	
+	\begin{table}
+		\centering
+		\begin{tabular}{|l|l|l|l|l|l|}
+			\hline
+			\rowcolor{blue!25}\textbf{Learning rate} & \cellcolor{blue!25}\textbf{\#Hidden layers} & \cellcolor{blue!25}\textbf{Hidden layers size} & \cellcolor{blue!25}\textbf{Dropout probability} & \cellcolor{blue!25}\textbf{GRU size}  & \cellcolor{blue!25}\textbf{MLP Units}\\
+			\hline
+			0.001 & 1 & 64 & 0.2 & 100 & 64\\
+			\hline
+			0.01 & 2 & 128 & 0.25 & 150 & 128\\
+			\hline
+			0.1 & 3 & 256 & 0.3 & 200 & 256 \\
+			\hline 
+			& & & 0.35 & 250 & \\
+			\hline 
+			& & & 0.4 & 300 &\\
+			\hline 
+			& & & 0.45 & 350 &\\
+			\hline 
+			& & & 0.5 & 400 &\\
+			\hline 
+			& & &  & 450 &\\
+			\hline 
+			& & & & 500 & \\
+			
+			
+			
+			\hline
+		\end{tabular}
+		\caption{Hyperparameters tested in the development set.}
+		\label{tab::ex-1-hyper}
+	\end{table}
+	
+	\ 
+	
+	
+	\
+	
+	We utilize Keras Tuner in order to find the optimal hyperparameters. The best ones are the following:
+	\begin{itemize}
+		\item GRU Size: 250
+		\item Dropout rate: 0.3
+		\item MLP layers: 1
+		\item MLP Units: 64
+		\item MLP hidden layer size: 256
+		\item Learning Rate: 0.01
+	\end{itemize}
+	
+	The results we gain are shown in Figures \ref{fig::rnn_accuracy}, \ref{fig::rnn_loss}.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"rnn_accuracy".png}
+		\caption{RNN accuracy as a function of epochs.}
+		\label{fig::rnn_accuracy}
+	\end{figure}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=11cm]{"rnn_loss".png}
+		\caption{RNN loss as a function of epochs.}
+		\label{fig::rnn_loss}
+	\end{figure}
+	
+	
+	
+	Finally, we provide the classification report for training, development and test subsets in Tables \ref{tab::ex-1-report-train} , \ref{tab::ex-1-report-dev}, \ref{tab::ex-1-report-test} and the AUC scores in table \ref{tab::ex-1-stats-auc} .
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.87 & 0.95 & 0.91 & 690 \\\hline
+			pos & 0.94  & 0.86 & 0.9 & 710 \\\hline
+			accuracy & & & \textbf{0.9} & 1400 \\\hline
+			macro avg & 0.91 & 0.9 & 0.9 & 1400 \\\hline
+			weighted avg & 0.91 & 0.9 & 0.9 & 1400 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the training set.}
+		\label{tab::ex-1-report-train}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.82 & 0.9 & 0.86 & 157 \\\hline
+			pos & 0.88  & 0.79 & 0.83 & 143 \\\hline
+			accuracy & & & \textbf{0.85} & 300 \\\hline
+			macro avg & 0.85 & 0.84 & 0.85 & 300 \\\hline
+			weighted avg & 0.85 & 0.85 & 0.85 & 300 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the development set.}
+		\label{tab::ex-1-report-dev}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.82 & 0.85 & 0.84 & 153 \\\hline
+			pos & 0.84  & 0.81 & 0.82 & 147 \\\hline
+			accuracy & & & \textbf{0.83} & 300 \\\hline
+			macro avg & 0.83 & 0.83 & 0.83 & 300 \\\hline
+			weighted avg & 0.83 & 0.83 & 0.83 & 300 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the test set.}
+		\label{tab::ex-1-report-test}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Class} & \cellcolor{blue!25}\textbf{Training} & \cellcolor{blue!25}\textbf{Development} & \cellcolor{blue!25}\textbf{Test}\\
+			\hline
+			neg & 0.96419 & 0.91706 & 0.90574 \\\hline
+			pos & 0.96408 & 0.91737 & 0.90565 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{AUC stats for training, development and test sets.}
+		\label{tab::ex-1-stats-auc}
+	\end{table}
+	\ 
+	
+	
+	
+	\
+	
+	The MACRO AUC scores were found to be the following:
+	\begin{itemize}
+		\item Training set: 0.9641
+		\item Development set: 0.9172
+		\item Test set: 0.9057
+	\end{itemize}
+	
+	\printbibliography
+	
+\end{document}
