@@ -282,6 +282,17 @@
 		\item{Single characters removal.}
 		\item{ Converting multiple spaces to single ones.}
 	\end{itemize}
+ 
+        \subsubsection{Data Augmentation}
+        Our dataset consists of 2000 reviews, as we stated earlier. The size can be considered rather small and classification algorithms may be led to overfitting. 
+        
+        One measure we may take to face this is augmenting the text data. This involves generating new data points by making minor modifications on the existing ones. Here we will use the technique of synonym replacement. Iterating the original data, the function \texttt{synonym\_replacement()} replaces words in each sentence with synonyms and the labels are also updated accordingly.
+        
+        How the \texttt{synonym\_replacement()} works: We split the input sentence into words. For each word, we retrieve synonyms from the 'synsets' function of WordNet. If we find synonyms, we randomly select one and we extract the canonical form of it (lemmatization). Finally, we replace the original word with the lemma if they are different.
+
+        After applying data augmentation, we manage to double the size of the dataset, from 2000 to 4000 movie reviews. 
+
+        
 	
 	\subsubsection{Splitting the dataset}
 	We decided to split the (processed) dataset into the training set (70\%), development set (15\%) and test set (15\%). The sizes of each set are shown in Table \ref{tab::ex-9-stats}.
@@ -292,9 +303,9 @@
 			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Total Word Count} &
 			\cellcolor{blue!25}\textbf{Total Document Count}\\
 			\hline
-			Training & 36624 & 1400 \\\hline
-			Development & 16948  & 300 \\\hline
-			Test & 16780 & 300 \\\hline
+			Training & 46103 & 2800 \\\hline
+			Development & 25136  & 600 \\\hline
+			Test & 25410 & 600 \\\hline
 		\end{tabular}
 		\centering
 		\caption{Total text volume of each data split.}
@@ -303,7 +314,7 @@
 	
 	
 	\subsubsection{SpaCy}
-	As an additional step to our pre-processing function, we also used SpaCy in order to proceed to the sentence splitting and the tokenization, in the same manner as we discussed in the lab. In the training dataset, we find out that the average word length dropped from 2586.9 (before tokenization) dropped to 312.98 (after tokenization). More statistics about the mean and the standard deviation of the sequence length on the training, development and test sets can be found in Table \ref{tab::ex-1-stats} .
+	As an additional step to our pre-processing function, we also used SpaCy in order to proceed to the sentence splitting and the tokenization, in the same manner as we discussed in the lab. In the training dataset, we find out that the average word length dropped from 2587.9 (before tokenization) to 314.12 (after tokenization). More statistics about the mean and the standard deviation of the sequence length on the training, development and test sets can be found in Table \ref{tab::ex-1-stats} .
 	
 	\begin{table}
 		\begin{tabular}{|l|l|l|}
@@ -311,9 +322,9 @@
 			\cellcolor{blue!25}\textbf{Set} & \cellcolor{blue!25}\textbf{Mean of sequence length} &
 			\cellcolor{blue!25}\textbf{Standard deviation of sequence length}\\
 			\hline
-			Training & 312.97 & 134.5 \\\hline
-			Development & 315.1  & 139.3 \\\hline
-			Test & 305 & 131.2 \\\hline
+			Training & 314.12 & 135.9 \\\hline
+			Development & 313.7  & 133.6 \\\hline
+			Test & 321.4 & 138.5 \\\hline
 		\end{tabular}
 		\centering
 		\caption{Mean and standard deviation of the sequence length in training,development and test sets.}
@@ -333,14 +344,68 @@
 	
 	\subsection{Classifiers}
 	\subsubsection{DummyClassifier}
-	DummyClassifier makes predictions that ignore the input features. This classifier serves as a simple baseline to compare against other more complex classifiers.The strategy to generate predictions was set to ‘most\_frequent’,  meaning that the predict method always returns the most frequent class label. The results of this classifier are demonstrated in Figure \ref{fig::dummy_metrics}.
+	DummyClassifier makes predictions that ignore the input features. This classifier serves as a simple baseline to compare against other more complex classifiers.The strategy to generate predictions was set to ‘most\_frequent’,  meaning that the predict method always returns the most frequent class label. The results of this classifier are demonstrated in Tables  \ref{tab::ex-1-report-train-dummy}, \ref{tab::ex-1-report-dev-dummy}, \ref{tab::ex-1-report-test-dummy}.
 	
-	\begin{figure}
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.00 & 0.00 & 0.00 & 690 \\\hline
+			pos & 0.51  & 1.00 & 0.67 & 710 \\\hline
+			accuracy & & & \textbf{0.51} & 1400 \\\hline
+			macro avg & 0.25 & 0.5 & 0.34 & 1400 \\\hline
+			weighted avg & 0.26 & 0.51 & 0.34 & 1400 \\\hline
+			
+		\end{tabular}
 		\centering
-		\includegraphics[width=8cm]{"DummyClf_metrics".png}
-		\caption{Classification results of DummyClassifier for training,test and validation sets.}
-		\label{fig::dummy_metrics}
-	\end{figure}
+		\caption{Classification report on the training set (Dummy Classifier).}
+		\label{tab::ex-1-report-train-dummy}
+	\end{table}
+	
+
+ 	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.00 & 0.00 & 0.00 & 157 \\\hline
+			pos & 0.48  & 1.00 & 0.65 & 143 \\\hline
+			accuracy & & & \textbf{0.48} & 300 \\\hline
+			macro avg & 0.24 & 0.5 & 0.32 & 300 \\\hline
+			weighted avg & 0.23 & 0.48 & 0.31 & 300 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the development set (Dummy Classifier).}
+		\label{tab::ex-1-report-dev-dummy}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.00 & 0.00 & 0.00 & 153 \\\hline
+			pos & 0.49  & 1.00 & 0.66 & 147 \\\hline
+			accuracy & & & \textbf{0.49} & 300 \\\hline
+			macro avg & 0.24 & 0.5 & 0.33 & 300 \\\hline
+			weighted avg & 0.24 & 0.49 & 0.32 & 300 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the test set (Dummy Classifier).}
+		\label{tab::ex-1-report-test-dummy}
+	\end{table}
 	
 	
 	As expected, the results are poor since the decision of the classifier depends exclusively only the majority class.
@@ -357,19 +422,75 @@
 	The best hyperparameters were the following:
 	C= 1, penalty= ‘l2’, solver = ‘liblinear’.
 	
-	Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Figure \ref{fig::LR_metrics} .
+	Now, it is time to fit the Logistic Regression using these parameters. The results we got are shown in Tables \ref{tab::ex-1-report-train-lr}, \ref{tab::ex-1-report-dev-lr}, \ref{tab::ex-1-report-test-lr}.
 	
-	\begin{figure}
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.94 & 0.92 & 0.93 & 690 \\\hline
+			pos & 0.92  & 0.94 & 0.93 & 710 \\\hline
+			accuracy & & & \textbf{0.93} & 1400 \\\hline
+			macro avg & 0.93 & 0.93 & 0.93 & 1400 \\\hline
+			weighted avg & 0.93 & 0.93 & 0.93 & 1400 \\\hline
+			
+		\end{tabular}
 		\centering
-		\includegraphics[width=8cm]{"LRClf_metrics".png}
-		\caption{Metrics of the Logistic Regression on the training, test and development sets.}
-		\label{fig::LR_metrics}
-	\end{figure}
+		\caption{Classification report on the training set (Logistic Regression).}
+		\label{tab::ex-1-report-train-lr}
+	\end{table}
+	
+
+ 	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.90 & 0.82 & 0.85 & 157 \\\hline
+			pos & 0.82  & 0.9 & 0.85 & 143 \\\hline
+			accuracy & & & \textbf{0.85} & 300 \\\hline
+			macro avg & 0.86 & 0.86 & 0.85 & 300 \\\hline
+			weighted avg & 0.86 & 0.85 & 0.85 & 300 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the development set (Logistic Regression).}
+		\label{tab::ex-1-report-dev-lr}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.88 & 0.81 & 0.84 & 153 \\\hline
+			pos & 0.82  & 0.88 & 0.85 & 147 \\\hline
+			accuracy & & & \textbf{0.85} & 300 \\\hline
+			macro avg & 0.85 & 0.85 & 0.85 & 300 \\\hline
+			weighted avg & 0.85 & 0.85 & 0.85 & 300 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the test set (Logistic Regression).}
+		\label{tab::ex-1-report-test-lr}
+	\end{table}
+	 .
+	
 	
 	
 	\subsubsection{Our custom MLP classifier}
 	
-	First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying fit\_transform() and transform() to the training and development 1-hot vectors respectively.
+	First of all, we define the y\_train\_1\_hot and y\_dev\_1\_hot vectors using the LabelBinarizer and applying \texttt{fit\_transform()} and \texttt{transform()} to the training and development 1-hot vectors respectively.
 	
 	Now, it’s time to define our MLP model. We used the SGD algorithm since for this case it provided better results than Adam. The number of epochs was set to 50 and early stopping was used. We experimented with a variety of different hyperparameter combinations (Table \ref{tab::ex-9-hyper}).
 	
@@ -392,7 +513,7 @@
 			
 			\hline
 		\end{tabular}
-		\caption{Hyperpameters tested in the development set.}
+		\caption{Hyperpameters tested in the development set (MLP classifier).}
 		\label{tab::ex-9-hyper}
 	\end{table}
 	
@@ -408,21 +529,6 @@
 		\item Batch size: 64
 	\end{itemize}
 	
-	The results we gain are shown in Figures \ref{fig::mlp_accuracy}, \ref{fig::mlp_loss}.
-	
-	\begin{figure}
-		\centering
-		\includegraphics[width=11cm]{"MLP_accuracy".png}
-		\caption{MLP accuracy as a function of epochs.}
-		\label{fig::mlp_accuracy}
-	\end{figure}
-	
-	\begin{figure}
-		\centering
-		\includegraphics[width=11cm]{"MLP_loss".png}
-		\caption{MLP loss as a function of epochs.}
-		\label{fig::mlp_loss}
-	\end{figure}
 	
 	Next, we provide the metrics (Precision,Recall, F1 score and the AUC scores) for training, development and test subsets in Figure \ref{fig::mlp_metrics}.
 	
@@ -482,7 +588,7 @@
 			
 			\hline
 		\end{tabular}
-		\caption{Hyperparameters tested in the development set.}
+		\caption{Hyperparameters tested in the development set (RNN classifier).}
 		\label{tab::ex-1-hyper}
 	\end{table}
 	
@@ -500,22 +606,6 @@
 		\item MLP hidden layer size: 256
 		\item Learning Rate: 0.01
 	\end{itemize}
-	
-	The results we gain are shown in Figures \ref{fig::rnn_accuracy}, \ref{fig::rnn_loss}.
-	
-	\begin{figure}
-		\centering
-		\includegraphics[width=11cm]{"rnn_accuracy".png}
-		\caption{RNN accuracy as a function of epochs.}
-		\label{fig::rnn_accuracy}
-	\end{figure}
-	
-	\begin{figure}
-		\centering
-		\includegraphics[width=11cm]{"rnn_loss".png}
-		\caption{RNN loss as a function of epochs.}
-		\label{fig::rnn_loss}
-	\end{figure}
 	
 	
 	
@@ -537,7 +627,7 @@
 			
 		\end{tabular}
 		\centering
-		\caption{Classification report on the training set.}
+		\caption{Classification report on the training set (RNN classifier).}
 		\label{tab::ex-1-report-train}
 	\end{table}
 	
@@ -557,7 +647,7 @@
 			
 		\end{tabular}
 		\centering
-		\caption{Classification report on the development set.}
+		\caption{Classification report on the development set (RNN classifier).}
 		\label{tab::ex-1-report-dev}
 	\end{table}
 	
@@ -577,7 +667,7 @@
 			
 		\end{tabular}
 		\centering
-		\caption{Classification report on the test set.}
+		\caption{Classification report on the test set (RNN classifier).}
 		\label{tab::ex-1-report-test}
 	\end{table}
 	
@@ -591,7 +681,7 @@
 			
 		\end{tabular}
 		\centering
-		\caption{AUC stats for training, development and test sets.}
+		\caption{AUC stats for training, development and test sets (RNN classifier).}
 		\label{tab::ex-1-stats-auc}
 	\end{table}
 	\ 
@@ -605,6 +695,167 @@
 		\item Training set: 0.9641
 		\item Development set: 0.9172
 		\item Test set: 0.9057
+	\end{itemize}
+
+    \subsubsection{Our custom CNN classifier.}
+    We start by defining functions for recall, precision, f1 and accuracy. These functions will be used as metrics when compiling our model. The model we create is a Sequential one, with:
+    \begin{itemize}
+            \item An input layer, which takes sequences of integers as input.
+		\item An embedding layer, which converts input integers into fixed size dense vectors ('EMBEDDING\_DIM.' dimensional vectors).
+		\item A dropout layer.
+		\item Convolutional layers: They apply 1D convolution operation to the input sequence.
+		\item Global Max Pooling layer, which performs downsampling by taking the max value over the time dimension.
+            \item A dropout layer.
+		\item A dense layer, with 'relu' activation function.
+            \item A dense layer which has 2 units with sigmoid activation (since our problem is binary).
+            \item The compilation part, using Adam.
+	\end{itemize}
+
+ The hyperparameters we will use here are summarized in Table \ref{tab::ex-2-hyper}.
+	
+	\begin{table}
+		\centering
+		\begin{tabular}{|l|l|l|l|}
+			\hline
+			\rowcolor{blue!25}\textbf{Learning rate} & \cellcolor{blue!25}\textbf{Kernel size} & \cellcolor{blue!25}\textbf{Number of convolutional layers} & \cellcolor{blue!25}\textbf{Dropout probability} \\
+			\hline
+			0.001 & 1 & 1 & 0.2 \\
+			\hline
+			0.01 & 2 & 2 & 0.25 \\
+			\hline
+			0.1 & 3 & 3 & 0.3  \\
+			\hline 
+			& 4 & 4 & 0.35  \\
+			\hline 
+			& & 5 & 0.4 \\
+			\hline 
+			& & & 0.45 \\
+			\hline 
+			& & & 0.5 \\
+			
+			
+			
+			
+			\hline
+		\end{tabular}
+		\caption{Hyperparameters tested in the development set (CNN classifier).}
+		\label{tab::ex-2-hyper}
+	\end{table}
+	
+	\ 
+	
+	
+	\
+	
+	We utilize Keras Tuner in order to find the optimal hyperparameters. The best ones are the following:
+	\begin{itemize}
+		\item Kernel size: 1
+		\item Dropout rate: 0.35
+		\item Number of convolution layers: 1
+		\item Learning Rate: 0.001
+	\end{itemize}
+
+ The results we gain are shown in Figures \ref{fig::cnn_accuracy}, \ref{fig::cnn_loss} .
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=12cm]{"cnn_accuracy".png}
+		\caption{The CNN accuracy as a function of epochs.}
+		\label{fig::cnn_accuracy}
+	\end{figure}
+
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width=12cm]{"cnn_loss".png}
+		\caption{The CNN loss as a function of epochs.}
+            \label{fig::cnn_loss}
+	\end{figure}
+	
+	 
+ 
+ Finally, we provide the classification report for training, development and test subsets in Tables \ref{tab::ex-2-report-train} , \ref{tab::ex-2-report-dev}, \ref{tab::ex-2-report-test} and the AUC scores in table \ref{tab::ex-2-stats-auc} .
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.92 & 0.95 & 0.93 & 1376 \\\hline
+			pos & 0.95  & 0.92 & 0.93 & 1424 \\\hline
+			accuracy & & & \textbf{0.93} & 2800 \\\hline
+			macro avg & 0.93 & 0.93 & 0.93 & 2800 \\\hline
+			weighted avg & 0.93 & 0.93 & 0.93 & 2800 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the training set (CNN classifier).}
+		\label{tab::ex-2-report-train}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.84 & 0.87 & 0.86 & 305 \\\hline
+			pos & 0.86  & 0.83 & 0.85 & 295 \\\hline
+			accuracy & & & \textbf{0.85} & 600 \\\hline
+			macro avg & 0.85 & 0.85 & 0.85 & 600 \\\hline
+			weighted avg & 0.85 & 0.85 & 0.85 & 600 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the development set (CNN classifier).}
+		\label{tab::ex-2-report-dev}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score}  &
+			\cellcolor{blue!25}\textbf{support}\\
+			\hline
+			neg & 0.86 & 0.87 & 0.86 & 319 \\\hline
+			pos & 0.85  & 0.84 & 0.84 & 281 \\\hline
+			accuracy & & & \textbf{0.85} & 600 \\\hline
+			macro avg & 0.85 & 0.85 & 0.85 & 600 \\\hline
+			weighted avg & 0.85 & 0.85 & 0.85 & 600 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{Classification report on the test set (CNN classifier).}
+		\label{tab::ex-2-report-test}
+	\end{table}
+	
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Class} & \cellcolor{blue!25}\textbf{Training} & \cellcolor{blue!25}\textbf{Development} & \cellcolor{blue!25}\textbf{Test}\\
+			\hline
+			neg & 0.9822 & 0.9182 & 0.9188 \\\hline
+			pos & 0.9827 & 0.9185 & 0.9195 \\\hline
+			
+		\end{tabular}
+		\centering
+		\caption{AUC stats for training, development and test sets (CNN classifier).}
+		\label{tab::ex-2-stats-auc}
+	\end{table}
+	\
+	
+	The MACRO AUC scores were found to be the following:
+	\begin{itemize}
+		\item Training set: 0.9824
+		\item Development set: 0.9183
+		\item Test set: 0.9190
 	\end{itemize}
 	
 	\printbibliography
