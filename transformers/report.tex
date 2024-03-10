@@ -850,11 +850,9 @@
     The hyperparameters we will use here are:
     \begin{itemize}
         \item Learning Rate: Sample in (1e-5, 1e-3), uniform distribution.
-        \item Number of training epochs: Sample in (1,5), uniform distribution.
+        \item Number of training epochs: Sample in (1,3), uniform distribution.
         \item Per device train batch size: 8, 16, 32.
-        \item Frozen BERT blocks: Sample in (0,11), uniform distribution.
-        \item Task layer size: 64, 128, 256.
-        \item Number of task layers: Sample in (1,3), uniform distribution.
+        
     \end{itemize}
 
     \ 
@@ -863,15 +861,13 @@
     
     Our best model consists of the following hyperparameters:
     \begin{itemize}
-        \item Learning Rate: 8.8353e-05
+        \item Learning Rate: 1.82e-05
         \item Number of training epochs: 3
         \item Train batch size per device: 8
-        \item Number of frozen BERT blocks: 5
-        \item Number of task layers: 3
-        \item Task Layer size: 64
+        
     \end{itemize}
 
-    This model achieves an F1 score of \textbf{0.9}, outperforming both CNN and RNN classifiers.
+    This model achieves an F1 score of \textbf{0.889}, outperforming both CNN and RNN classifiers.
     \
 
     \
