@@ -191,9 +191,7 @@ def stats_all_tags(
     for i, tag in enumerate(np.unique(y_true)):
         dfs.append(stats_for_tag(y_true, y_pred, tag, proba, i))
 
-    dfs.append(stats_macro(y_true,
-
- y_pred, labels, proba))
+    dfs.append(stats_macro(y_true, y_pred, labels, proba))
 
     return pd.concat(dfs)
 
