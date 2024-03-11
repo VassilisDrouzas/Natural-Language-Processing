@@ -165,57 +165,83 @@
 	
 	\subsection{CNN classifier}
 	
-	\subsubsection{Hyper-parameter tuning}
+	We use the pretrained stacked CNN model used in the previous assignment. As mentioned above, the input is the same as in the Bi-GRU RNN case. Results can be found in the tables outlined above.
 	
-	We use the \texttt{keras\_tuner} library to automatically perform random search over various hyper-parameters of our model. We utilize a model with stacked convolutional layers, residual connections and either dropout or batch normalization. The CNN state is given to a Time-Distributed dense layer which decides the tag for the current word.
 	
-	The parameter search consists of:
+	
+	\subsection{BERT}
+	
+	We will be using the Transformers library in order to leverage already pretrained BERT models (implemented in PyTorch) for the POS tagging task. The model we will be using is the \href{https://huggingface.co/TweebankNLP/bertweet-tb2_ewt-pos-tagging}{Tweebank NLP Bert Model} which is pretrained on the POS tagging task on a similar dataset to ours.
+	
+	
+	\subsubsection{Data Representation}
+	
+	We split our text into individual sentences and load them in a dataset dict (from the \code{datasets} library) in order to properly feed them to our model.
+	
+	Unfortunately, while the authors do provide their own tokenizer, it is a "slow" tokenizer, meaning that its API is restricted. Since we need parts of the API to properly align labels and tokens, we will be using another "fast" tokenizer. We pick the vanilla bert-base-uncased tokenizer since its unlikely to deviate significantly from the tweebank tokenizer, and we choose the uncased version since, for the reasons mentioned above, we have converted all words to lowercase.
+	
+	An important issue in token classification for BERT models, is that the underlying model does not operate on words as tokens, but to sub-word tokens. This effectively means that for each word we must predict pseudo-tokens followed by the real POS token. We modify the originally provided \code{compute\_metrics} function which maps each token to multiple pseudo-labels (with the value -100), while the last token is the actual POS tag from our dataset. We apply this function to all data.
+	
+	In order to extract different metrics for each evaluation period, we construct our own \code{compute\_metrics} function. This is necessary since a lot of custom processing is need for token classification tasks, unlike with binary classification tasks where the code is trivial.
+	
+	We specifically turn the predictions into a continuous array of one-hot vectors, which can be used by sklearn to compute the metrics. We represent the dummy class (-100) with an extra integer, which is used to create a mask. This mask is applied both to the true labels and predictions, leading to two matrices composed of one-hot-vectors of only valid POS tags. 
+	
+	
+	\subsubsection{Hyperparameter tuning}
+	
+	We will be using the Trainer class from the transformers library to train models of various hyper-parameters.
+	
 	\begin{itemize}
-		\item The kernel size used, representing whether our model looks at 2-grams, 3-grams or 5-grams
-		\item The number of stacked CNN layers
-		\item Whether to use Batch Normalization or dropout
-		\item Whether to use embedding dropout
-		\item The learning rate
+		\item We exploit the gradient\_accumulation\_steps parameter to simulate a larger batch size, without incurring further GPU VRAM cost.
+		
+		\item We set up early stopping with respect to validation accuracy like with the models in previous assignments.
+		
+		\item We set the evaluation and save procedures to be executed each 100 steps, in order to strike a balance between the evaluation overhead and accurate statistics.
+		
+		\item We provide our0\code{compute\_metrics} function to the \code{Trainer} class in order to get detailed statistics in every evaluation period
 	\end{itemize}
 	
 	
-	The parameter search does NOT consist of:
+	The model features hundreds of millions of parameters making training very expensive. Given that we run our model locally, this places a very heavy restriction on the number of tuning runs we can afford and restraining us from choices we otherwise would like to explore. Namely:
+	
+	* We only consider one pretrained model. However, this model is a large BERT model pretrained on the same task and very similar dataset. It is therefore improbable that another model could outperform it.
+	* We do not unfreeze any BERT layers since that would sharply increase the training time. However, as mentioned above, the specific model has been pretrained on the same family of datasets as ours. Thus it is unlikely that the underlying BERT model would "learn" anything new from our fine-tuning.
+	* We restrict the hyperparameter runs to only 2. However, given the relative lack of hyperparameters to tune, this should not significantly restrict the final performance of our model.
+	
+	Given the above limitations we define our search space as:
 	\begin{itemize}
-		\item Number of filters, since the size must be constant and equal to the embedding size for a token classification task.
-		\item Dropout rate, since dropout rarely changes the final result of a neural network, but rather tunes the trade-off between training time and overfit avoidance
-		\item Activation functions, since they rarely significantly influence the model's performance
+		\item The learning rate.
+		\item The weight decay.
+		\item The warmup steps.
 	\end{itemize}
 	
-	Batch Normalization and dropout are kept mutually exclusive because of research indicating that the presence of both generally degrades performance during inference \cite{dropout-norm}
-	
-	Although CNNs are generally faster than RNNs due to their architecture enabling concurrent computation, they nevertheless present a much more challenging task computationally with the resources available on the local machine. We thus implement early stopping and set a maximum iteration limit of $30$, assuming that if a model needs to go over that limit, it may be computationally inefficient, and thus less desirable compared to a slightly worse, but much more efficient model. Additionally, we use a relatively large batch size to improve training times and set a relatively small number of iterations available to the tuner.
-	
-	
-	\subsubsection{Training}
-	
-	Because of the large computational costs of our optimal model, we keep the very large batch size (256) used in tuning. We do however allow our model to train for more iterations and with more leniency, by increasing the epochs with no improvement before Early Stopping interrupts the training.
-	
-	We use the categorical accuracy stopping criterion instead of loss. This may lead to situations where validation loss increases, but so does accuracy \cite{loss-accuracy}. This represents a trade-off between our model being more confidently incorrect about already-misclassified instances, but better at edge cases where the classification is more ambiguous. We previously discussed how the strength of a context-aware classifier lies in these kinds of distinctions, which justifies our choice of favoring correct edge-case classifications in the expense of more confidently incorrect misclassifications. Training loss and accuracy curves can be found in Figure \ref{fig::ex_3_fit}.
-	
-	\begin{figure}
-		\centering
-		\includegraphics[width=10cm]{"ex_3_fit.png"}
-		\caption{Loss and accuracy on the training and validation sets depending on the number of epochs.}
-		\label{fig::ex_3_fit}
-	\end{figure}
+	Unlike \code{keras\_tuner}, unfortunately we \href{https://discuss.huggingface.co/t/oserror-unable-to-load-weights-from-pytorch-checkpoint-file/3406}{cannot access automatically the best run}. Thus, we choose the best model by hand from our local files.
 	
 	\subsubsection{Results}
 	
-	The results of our CNN classifier compared to the previous MLP , RNNs and "dumb" baseline models mentioned above can be found in Tables \ref{tab::ex_3_train}, \ref{tab::ex_3_valid} and \ref{tab::ex_3_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	We can adapt the provided \code{get\_prediction} function in order to compare the true and predicted POS tags for each sentence in our dataset. 
 	
-	Focusing on the test results we make the following observations:
-	\begin{itemize}
-		\item The CNN model currently ranks last of all models, including the "dumb" baseline model in test F1-score. This does NOT necessarily indicate that the model is worse overall, since it has been optimized with regards to overall accuracy and not f1-score.
-		
-		\item The CNN model is limited by its complete inability to perceive unknown words ("X" tag) much like the RNN and Baseline classifiers. This is a consistent problem, severely limiting even the MLP  model.
-		
-	\end{itemize}
+	However, a significant issue becomes evident once we attempt to apply this to our data; our data are tokenized twice by the tokenizer (as explained more in-depth in the class forum). While post-processing allows some sentences to successfully get parsed into aligned POS tags, any sentences including tokens such as apostrophes force the algorithm to fail. This seems to be a restriction of the tokenizer API which we can not solve at the current moment in time.
 	
+	If the method worked correctly, we could feed the aligned true and prediction POS tags as seen above to the \code{tasks.util.stats\_by\_label} function which would automatically generate label-wise accuracy, precision, recall, f1 and PR-AUC scores.
+	
+	
+	\section{LLM Classifier}
+	
+	For the final POS tagging task, we will be using ChatGPT to automatically produce POS tags from our dataset. The input and output is inserted/extracted manually using the ChatGPT web API.
+	
+	We utilize a few-shot (demonstrator) prompting approach with a role prompt, detailed instructions and definitions. The model is prompted to answer via standard Input: Output: indicators. The prompt used and a breakdown of its structure can be found in Figure \ref{fig::prompt.png}.
+	
+	Unfortunately, our approach suffers from the same issue encountered in the Transformers Result section. Since we can not reliably tokenize the words into sub-token strings, the LLM produces misaligned POS labels.
+	
+	\begin{figure}
+		\centering
+		\includegraphics[height=16cm]{prompt.png}
+		\caption{The prompt used to elicit POS tagging classifications. Used on Chat-GPT.}
+		\label{fig::prompt.png}
+	\end{figure}
+	
+		
 	\input{output/ex_3_train.tex}
 	
 	\input{output/ex_3_valid.tex}
@@ -239,10 +265,8 @@
 		\item Average number of words: 746.3405
 		\item Average number of characters: 3893.002
 	\end{itemize}
-	
-	
-	
-	
+
+
 	\subsubsection{Pre-processing}
 	
 	For demonstration reasons, we start by printing the 20 most frequent words in the text, in Figure \ref{fig::20_common}.
