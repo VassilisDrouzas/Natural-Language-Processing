@@ -221,12 +221,30 @@
 	
 	We can adapt the provided \code{get\_prediction} function in order to compare the true and predicted POS tags for each sentence in our dataset. 
 	
-	However, a significant issue becomes evident once we attempt to apply this to our data; our data are tokenized twice by the tokenizer (as explained more in-depth in the class forum). While post-processing allows some sentences to successfully get parsed into aligned POS tags, any sentences including tokens such as apostrophes force the algorithm to fail. This seems to be a restriction of the tokenizer API which we can not solve at the current moment in time.
+	However, a significant issue becomes evident once we attempt to apply this to our data; our data are tokenized twice by the tokenizer (as explained more in-depth in the class forum). While post-processing allows some sentences to successfully get parsed into aligned POS tags, any sentences including tokens such as apostrophes force the algorithm to fail. This seems to be a restriction of the tokenizer API which we can not solve at the current moment in time. If the method worked correctly, we could feed the aligned true and prediction POS tags as seen above to the \code{tasks.util.stats\_by\_label} function which would automatically generate label-wise accuracy, precision, recall, f1 and PR-AUC scores.
 	
-	If the method worked correctly, we could feed the aligned true and prediction POS tags as seen above to the \code{tasks.util.stats\_by\_label} function which would automatically generate label-wise accuracy, precision, recall, f1 and PR-AUC scores.
+	Nonetheless, since we are able to compute aggregated results, we make them available in Table \ref{tab::bert_results}. The fine-tuned BERT model seems to out-perform all baselines except from the MLP baseline by a very narrow margin, which aligns with our expectations. We hypothesize that with more resources, enabling further hyper-parameter tuning and more datasets, this model could outperform the MLP classifier.
 	
 	
-	\section{LLM Classifier}
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{Cross Entropy Loss} & 
+			\cellcolor{blue!25}\textbf{Accuracy} &
+			\cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{F1-score} \\
+			\hline
+			0.3773 & 0.8852 & 0.7394 & 0.716 & 0.7256 \\
+			\hline			
+		\end{tabular}
+		\centering
+		\caption{Macro-averaged evaluation metrics for the fine-tuned BERT POS tagger.}
+		\label{tab::bert_results}
+	\end{table}
+	
+	
+	\subsection{LLM Classifier}
 	
 	For the final POS tagging task, we will be using ChatGPT to automatically produce POS tags from our dataset. The input and output is inserted/extracted manually using the ChatGPT web API.
 	
