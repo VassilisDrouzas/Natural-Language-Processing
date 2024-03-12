@@ -884,7 +884,7 @@
 
         \subsubsection{Our custom DistilBERT}
         
-        Here we will be using a pre-trained DistilBERT model. At first, we will be creating the reviews dataset using the \texttt{datasets} library. Taking the DistilBERT base uncased model, we perform Byter Pair Encoding Tokenization with a pre-trained tokenizer from the \texttt{transformers} library and get tokenized sequences that have the maximum allowed length by the tokenizer. After that, we initialize data\_collator, which is used later during training to collate batches of tokenized data, padding sequences as necessary to ensure uniform length within each batch. We define the validation \textbf{f1} as our metric and perform hyperparameter search to get our best model. 
+        Here we will be using a pre-trained DistilBERT model. At first, we will be creating the reviews dataset using the \texttt{datasets} library. Taking the DistilBERT base uncased model, we perform Byter Pair Encoding Tokenization with a pre-trained tokenizer from the \texttt{transformers} library and get tokenized sequences that have the maximum allowed length by the tokenizer. After that, we initialize data\_collator, which is used later during training to collate batches of tokenized data, padding sequences as necessary to ensure uniform length within each batch. We define the validation \textbf{accuracy} as our metric and perform hyperparameter search to get our best model, but we keep the values of precision, recall and f1 for each class. 
         \ 
         
         \
@@ -903,18 +903,42 @@
     
     Our best model consists of the following hyperparameters:
     \begin{itemize}
-        \item Learning Rate: 1.82e-05
-        \item Number of training epochs: 3
+        \item Learning Rate: 2.10e-05
+        \item Number of training epochs: 2
         \item Train batch size per device: 8
         
     \end{itemize}
 
-    This model achieves an F1 score of \textbf{0.889}, outperforming both CNN and RNN classifiers.
+    The metrics for the DistilBERT classifier can be found in Table \ref{tab::ex-1-report-dev-bert}.
+    
+	\begin{table}
+		\begin{tabular}{|l|l|l|l|}
+			\hline
+			\cellcolor{blue!25}\textbf{} & \cellcolor{blue!25}\textbf{Precision} &
+			\cellcolor{blue!25}\textbf{Recall}  &
+			\cellcolor{blue!25}\textbf{f1-score} \\
+			\hline
+			neg & 0.8827 & 0.8885 & 0.8856   \\\hline
+			pos & 0.8839  & 0.8779 & 0.8809  \\\hline
+			accuracy & & & \textbf{0.8833} \\\hline
+			macro avg & 0.8833 & 0.8832 & 0.8883  \\\hline
+			
+			
+		\end{tabular}
+		\centering
+		\caption{Evaluation metrics for the fine-tuned BERT classifier.}
+		\label{tab::ex-1-report-dev-bert}
+	\end{table}
+
+ \
+ 
+As we can see, our DistilBERT classifier catches an accuracy of \textbf{88.3}\%, overcoming CNN, RNN classifiers.
+    
     \
 
     \
-
-    Finally, we present some experimental results by prompting an LLM (ChatGPT in our case). The process was the following: We randomly selected 20 examples from our dataset, and we took their labels. We used the first 10 as demonstrators to instruct ChatGPT (few-shot learning) and the rest 10 are requested for classification by the language model. It turns out that ChatGPT predicts correct 8 out of 10 examples, with an F1 score of 0.83. You can check the full prompt \href{https://chat.openai.com/share/dba55d12-a18b-4ffa-9fc9-87c46a313ebc}{here}.
+    \subsubsection{LLM classifier (ChatGPT)}
+    Here, we present some experimental results by prompting an LLM (ChatGPT in our case). The process was the following: We randomly selected 20 examples from our dataset, and we took their labels. We used the first 10 as demonstrators to instruct ChatGPT (few-shot learning) and the rest 10 are requested for classification by the language model. It turns out that ChatGPT predicts correct 8 out of 10 examples, with an F1 score of 0.83 and accuracy of \textbf{0.8}. You can check the full prompt \href{https://chat.openai.com/share/dba55d12-a18b-4ffa-9fc9-87c46a313ebc}{here}.
 	
 	\printbibliography
 	
