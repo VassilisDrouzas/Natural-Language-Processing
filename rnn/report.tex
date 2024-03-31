@@ -16,6 +16,8 @@
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
 
 
 \hypersetup{
@@ -59,7 +61,7 @@
 	This report will briefly discuss the theoretical background, implementation details and decisions taken for the construction of RNN models for sentiment analysis and POS tagging tasks.
 	
 	This report and its associated code, analysis and results were conducted by the two authors. Specifically, the sentiment analysis task was performed by Drouzas Vasilis, and the POS-tagging task by Tsirmpas Dimitris. This report was written by both authors.
-	
+		
 	
 	\section{POS Tagging}
 	
@@ -198,13 +200,12 @@
 	
 	\subsubsection{Results}
 	
-	The results of our RNN classifier compared to the previous MLP and baseline models mentioned above can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}. We include precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We \textbf{can not use PR-AUC scores}, since they are only defined for binary classification tasks.
+	The results of our RNN classifier compared to the previous MLP and baseline models mentioned above can be found in Tables \ref{tab::ex_2_train}, \ref{tab::ex_2_valid} and \ref{tab::ex_2_test}. We include accuracy, precision, recall and F1 scores for each individual tag, as well as their macro average denoted by the "MACRO" tag in the tables. We refrain from using PR-AUC scores for the baseline classifier, since PR-AUC works on predicted probabilities. While we could define the prediction probability as the occurrences of the tag for each word divided by the total occurrences of the word, this would probably only misrepresent the results, since our models would follow different definitions of classification probability.
 	
 	Focusing on the test results we make the following observations:
 	\begin{itemize}
-		\item The RNN model overall does NOT outperform our MLP classifier, nor the Baseline by overall MACRO-F1 score. This most likely means that a small, lean model, which only considers the immediate vicinity of the target word is sufficient for the POS tagging task in this dataset.
-		
-		\item The RNN model almost completely ignores symbols ("SYM" tag), defined as "a word-like entity that differs from ordinary words by form, function, or both", which "can be substituted by normal words". Symbols have the second lowest support after unknown words (721 instances in the training dataset). It does however beat the MLP classifier and almost matches the scores for "unknown" words ("X" tag), meaning that this is probably not an issue with sparsely seen categories. The RNN also completely ignores punctuation marks.
+		\item The RNN model overall does NOT outperform our MLP classifier, but does outperform the Baseline by overall MACRO-F1 score. This most likely means that a small, lean model, which only considers the immediate vicinity of the target word is sufficient for the POS tagging task in this dataset.
+		\item The RNN model completely ignores unknown words. We verify that this isn't a preprocessing issue, since keras Tokenizer was not instructed to replace any words with OOV tokens.
 		
 		\item In most other categories, the RNN closely matches the MLP baseline.
 	
@@ -234,8 +235,6 @@
 		\item Average number of words: 746.3405
 		\item Average number of characters: 3893.002
 	\end{itemize}
-	
-	
 	
 	
 	\subsubsection{Pre-processing}
