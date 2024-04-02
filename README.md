@@ -1,6 +1,6 @@
-# Text Analytics
+# Natural Language Processing
 
-## Language Moddeling
+## Language Modeling
 
 We create bigram, trigram and linear interpolation language models which are used for language generation and spell correction. 
 
